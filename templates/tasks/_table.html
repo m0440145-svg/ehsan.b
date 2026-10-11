@@ -1,0 +1,71 @@
+{% load ui %}
+<div class="table-responsive">
+<table class="table table-hover align-middle">
+  <thead><tr>
+    <th>رقم المهمة</th><th>المهمة</th><th>الوحدة</th><th>المسؤول</th><th>المشاركون</th><th>الأولوية</th>
+    <th>الاستحقاق</th><th>المتبقي / التأخير</th><th>الإنجاز</th><th>الحالة</th>
+    {% if show_reason %}<th>سبب التعثر</th>{% endif %}<th>آخر تحديث</th><th class="no-print">إجراءات</th>
+  </tr></thead>
+  <tbody>
+  {% for t in tasks %}
+    <tr class="{% if t.status == 'stalled' %}row-stalled{% elif t.is_late %}row-late{% endif %}">
+      <td><span class="task-no">{{ t.number }}</span></td>
+      <td style="min-width:220px">
+        <a class="task-title" href="{{ t.get_absolute_url }}">{{ t.title|truncatechars:70 }}</a>
+        <div class="mt-1 d-flex flex-wrap gap-1">
+          {% if t.flag_needs_followup %}<span class="flag flag-followup" data-bs-toggle="tooltip" title="مر أكثر من {{ rules.followup_elapsed_pct|default:30 }}% من المدة دون إنجاز"><i class="bi bi-eye"></i> بحاجة متابعة</span>{% endif %}
+          {% if t.flag_at_risk %}<span class="flag flag-risk" data-bs-toggle="tooltip" title="مر معظم المدة والإنجاز منخفض"><i class="bi bi-exclamation-triangle"></i> مرشحة للتعثر</span>{% endif %}
+          {% if t.flag_stale %}<span class="flag flag-stale"><i class="bi bi-clock-history"></i> بدون تحديث</span>{% endif %}
+          {% if t.escalation_level %}<span class="flag flag-esc"><i class="bi bi-graph-up-arrow"></i> مصعدة م{{ t.escalation_level }}</span>{% endif %}
+          {% if t.confidentiality != 'normal' %}<span class="flag flag-stale"><i class="bi bi-shield-lock"></i> {{ t.get_confidentiality_display }}</span>{% endif %}
+        </div>
+      </td>
+      <td class="small">{{ t.unit.name }}</td>
+      <td class="small text-nowrap"><span class="avatar sm ms-1">{{ t.owner.full_name|initials }}</span>{{ t.owner.full_name }}</td>
+      <td class="small">
+        {% for a in t.assignees.all %}{% if a.role == 'participant' %}<span class="avatar sm" data-bs-toggle="tooltip" title="{{ a.employee.full_name }}">{{ a.employee.full_name|initials }}</span>{% endif %}{% empty %}—{% endfor %}
+      </td>
+      <td>{% priority_badge t.priority %}</td>
+      <td class="small text-nowrap">{{ t.due_date|date:"Y-m-d" }}</td>
+      <td>{% days_badge t %}</td>
+      <td style="min-width:120px">{% progress_bar t.progress t %}</td>
+      <td>{% status_badge t.status %}</td>
+      {% if show_reason %}<td class="small" style="max-width:180px">{% for o in t.obstacles.all|slice:":1" %}<i class="bi bi-exclamation-octagon text-stalled"></i> {{ o.get_obstacle_type_display }}<div class="text-muted">{{ o.description|truncatechars:50 }}</div>{% empty %}—{% endfor %}</td>{% endif %}
+      <td class="small text-muted text-nowrap">{{ t.last_activity_at|since }}</td>
+      <td class="text-nowrap no-print">
+        <a href="{{ t.get_absolute_url }}" class="btn btn-soft btn-sm btn-icon" data-bs-toggle="tooltip" title="متابعة"><i class="bi bi-eye"></i></a>
+        {% if t.is_open and user.role_code != 'viewer' %}
+        <button type="button" class="btn btn-soft btn-sm btn-icon" data-bs-toggle="modal" data-bs-target="#quickReplyModal" data-task-modal="#quickReplyModal" data-action="{% url 'tasks:quick_reply' t.pk %}" data-title="{{ t.number }} – {{ t.title }}"><i class="bi bi-reply" data-bs-toggle="tooltip" title="رد"></i></button>
+        <button type="button" class="btn btn-soft btn-sm btn-icon text-danger" data-bs-toggle="modal" data-bs-target="#escalateModal" data-task-modal="#escalateModal" data-action="{% url 'tasks:escalate' t.pk %}" data-title="{{ t.number }} – {{ t.title }}"><i class="bi bi-graph-up-arrow" data-bs-toggle="tooltip" title="تصعيد"></i></button>
+        {% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="14">{% include "partials/empty.html" with icon=empty_icon|default:"bi-check2-all" title=empty_title|default:"لا توجد مهام" text=empty_text %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<div class="modal fade" id="quickReplyModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <div class="modal-header"><h6 class="modal-title fw-head"><i class="bi bi-reply text-brand"></i> رد على: <span data-fill-title></span></h6><button type="button" class="btn-close ms-0" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><textarea class="form-control" name="body" rows="4" required placeholder="اكتب ردك أو توجيهك..."></textarea></div>
+    <div class="modal-footer"><button type="button" class="btn btn-soft" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-brand">إرسال الرد</button></div>
+  </form>
+</div></div></div>
+
+<div class="modal fade" id="escalateModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <div class="modal-header"><h6 class="modal-title fw-head"><i class="bi bi-graph-up-arrow text-danger"></i> تصعيد: <span data-fill-title></span></h6><button type="button" class="btn-close ms-0" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <label class="form-label">التصعيد إلى</label>
+      <select class="form-select mb-3" name="level"><option value="">المستوى التالي تلقائيًا</option><option value="1">رئيس الوحدة</option><option value="2">مساعد المدير التنفيذي</option><option value="3">المدير التنفيذي</option></select>
+      <label class="form-label">سبب التصعيد <span class="required-star">*</span></label>
+      <textarea class="form-control" name="reason" rows="3" required></textarea>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-soft" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-danger">تصعيد</button></div>
+  </form>
+</div></div></div>

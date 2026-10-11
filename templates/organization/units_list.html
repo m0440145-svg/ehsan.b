@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}الوحدات التنظيمية{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">الإدارة</li><li class="breadcrumb-item active">الوحدات</li>{% endblock %}
+{% block page_title %}الوحدات التنظيمية{% endblock %}
+{% block page_sub %}{{ rows|length }} وحدة · الرئيس والموظفون وعدد المهام ونسبة الإنجاز{% endblock %}
+{% block page_actions %}<a href="{% url 'organization:unit_create' %}" class="btn btn-brand"><i class="bi bi-plus-lg"></i> وحدة جديدة</a>{% endblock %}
+{% block content %}
+<div class="row g-3">
+{% for r in rows %}{% with u=r.unit k=r.kpis %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100"><div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div class="d-flex gap-2 align-items-center">
+          <div class="kpi-icon" style="--c:#cf6028;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand)"><i class="bi bi-diagram-3"></i></div>
+          <div><a href="{% url 'organization:unit_detail' u.pk %}" class="fw-bold text-ink fs-6">{{ u.name }}</a>
+            <div class="small text-muted">{% if u.head %}<i class="bi bi-person-badge"></i> {{ u.head.full_name }}{% else %}بدون رئيس{% endif %}</div></div>
+        </div>
+        {% if u.is_active %}<span class="badge bg-success-subtle text-success">نشطة</span>{% else %}<span class="badge bg-secondary">موقوفة</span>{% endif %}
+      </div>
+      <p class="small text-muted mb-3" style="min-height:40px">{{ u.description|truncatechars:110|default:"—" }}</p>
+      <div class="d-flex justify-content-between small mb-2">
+        <span><i class="bi bi-people text-brand"></i> {{ u.emp_count }} موظف</span>
+        <span><i class="bi bi-list-task text-brand"></i> {{ k.total }} مهمة</span>
+        <span class="{% if k.overdue %}text-danger{% endif %}"><i class="bi bi-alarm"></i> {{ k.overdue }} متأخرة</span>
+      </div>
+      {% progress_bar k.completion_rate %}
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <small class="text-muted">أُنشئت {{ u.established_on|date:"Y-m-d" }}</small>
+        <a href="{% url 'organization:unit_edit' u.pk %}" class="btn btn-soft btn-sm"><i class="bi bi-pencil"></i> تعديل</a>
+      </div>
+    </div></div>
+  </div>
+{% endwith %}{% empty %}<div class="col-12"><div class="card"><div class="card-body">{% include "partials/empty.html" with icon="bi-diagram-3" title="لا توجد وحدات" %}</div></div></div>{% endfor %}
+</div>
+{% endblock %}

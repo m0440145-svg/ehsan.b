@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}قرار جديد{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'meetings:decisions' %}">القرارات</a></li><li class="breadcrumb-item active">قرار جديد</li>{% endblock %}
+{% block page_title %}تسجيل قرار اجتماع{% endblock %}
+{% block page_sub %}لا يوجد الاجتماع؟ <a href="{% url 'meetings:meetings' %}">أضفه أولًا</a>{% endblock %}
+{% block content %}
+<div class="card"><div class="card-body">
+  <form method="post" enctype="multipart/form-data" class="row g-3">{% csrf_token %}
+    {% include "partials/form_field.html" with field=form.number col="col-md-4" %}
+    {% include "partials/form_field.html" with field=form.meeting col="col-md-8" %}
+    {% include "partials/form_field.html" with field=form.text col="col-12" %}
+    {% include "partials/form_field.html" with field=form.decision_date col="col-md-4" %}
+    {% include "partials/form_field.html" with field=form.due_date col="col-md-4" %}
+    {% include "partials/form_field.html" with field=form.followup_owner col="col-md-4" %}
+    {% include "partials/form_field.html" with field=form.attachments col="col-12" %}
+    <div class="col-12 d-flex gap-2"><button class="btn btn-brand"><i class="bi bi-check2"></i> حفظ القرار</button><a href="{% url 'meetings:decisions' %}" class="btn btn-soft">إلغاء</a></div>
+  </form>
+</div></div>
+{% endblock %}

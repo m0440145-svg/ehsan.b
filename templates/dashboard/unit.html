@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}لوحة الوحدة{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item active">لوحة الوحدة</li>{% endblock %}
+{% block page_title %}<i class="bi bi-diagram-3 text-brand"></i> {{ unit.name }}{% endblock %}
+{% block page_sub %}رئيس الوحدة: {{ unit.head.full_name|default:"—" }} · {{ members|length }} موظف{% endblock %}
+{% block page_actions %}
+  {% if units|length > 1 %}<form method="get"><select name="unit" class="form-select" onchange="this.form.submit()">{% for u in units %}<option value="{{ u.pk }}" {% if u.pk == unit.pk %}selected{% endif %}>{{ u.name }}</option>{% endfor %}</select></form>{% endif %}
+  <a href="{% url 'tasks:unit' %}" class="btn btn-soft"><i class="bi bi-list-check"></i> مهام الوحدة</a>
+  {% if user.employee %}<a href="{% url 'dashboard:employee' %}" class="btn btn-soft"><i class="bi bi-person"></i> لوحتي</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=kpis.total label="إجمالي مهام الوحدة" icon="bi-list-task" color="#cf6028" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=kpis.completion_rate|stringformat:"s"|add:"%" label="نسبة الإنجاز" icon="bi-pie-chart" color="#1c6dd0" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=kpis.done label="المكتملة" icon="bi-check2-circle" color="#198754" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=kpis.overdue label="المتأخرة" icon="bi-alarm" color="#dc3545" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=kpis.stalled label="المتعثرة" icon="bi-exclamation-octagon" color="#8b1a1a" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=kpis.critical label="الحرجة" icon="bi-lightning-charge" color="#b02a37" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=kpis.pending label="بانتظار الاعتماد" icon="bi-patch-question" color="#6f42c1" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=kpis.avg_completion_days label="متوسط زمن الإنجاز (يوم)" icon="bi-stopwatch" color="#575650" %}</div>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-xl-8"><div class="card h-100"><div class="card-header"><i class="bi bi-bar-chart"></i> المهام حسب الموظف (إجمالي، مكتمل، جارٍ، متأخر، متعثر)</div><div class="card-body"><div class="chart-box lg"><canvas id="empChart"></canvas></div></div></div></div>
+  <div class="col-xl-4"><div class="card h-100"><div class="card-header"><i class="bi bi-speedometer2"></i> توزيع ضغط العمل</div><div class="card-body"><div class="chart-box lg"><canvas id="loadChart"></canvas></div></div></div></div>
+</div>
+<div class="card mb-3"><div class="card-header"><i class="bi bi-people"></i> أداء الموظفين</div>
+  <div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>الموظف</th><th>الإجمالي</th><th>مكتمل</th><th>جارٍ</th><th>متأخر</th><th>متعثر</th><th>متوسط الإنجاز</th><th>الالتزام بالمواعيد</th><th></th></tr></thead>
+    <tbody>{% for e in by_emp %}<tr>
+      <td><span class="avatar sm ms-1">{{ e.name|initials }}</span>{{ e.name }}</td><td>{{ e.total }}</td><td class="text-success fw-bold">{{ e.done }}</td><td>{{ e.in_progress }}</td>
+      <td class="{% if e.overdue %}text-danger fw-bold{% endif %}">{{ e.overdue }}</td><td class="{% if e.stalled %}text-stalled fw-bold{% endif %}">{{ e.stalled }}</td>
+      <td style="min-width:120px">{% progress_bar e.avg_progress %}</td><td>{{ e.on_time_rate }}%</td>
+      <td><a href="{% url 'organization:employee_detail' e.id %}" class="btn btn-soft btn-sm"><i class="bi bi-bar-chart"></i></a></td>
+    </tr>{% empty %}<tr><td colspan="9">{% include "partials/empty.html" %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-lg-6"><div class="card h-100"><div class="card-header"><i class="bi bi-trophy"></i> أكثر الموظفين التزامًا</div><div class="card-body py-1 list-compact">
+    {% for e in committed %}<div class="item"><span class="avatar sm">{{ e.name|initials }}</span><div class="flex-grow-1">{{ e.name }}<div class="small text-muted">{{ e.done }} مكتملة · {{ e.on_time }} في موعدها</div></div><span class="badge bg-success">{{ e.on_time_rate }}%</span></div>
+    {% empty %}{% include "partials/empty.html" with icon="bi-trophy" title="لا توجد مهام مكتملة بعد" %}{% endfor %}
+  </div></div></div>
+  <div class="col-lg-6"><div class="card h-100"><div class="card-header"><i class="bi bi-alarm"></i> الموظفون الذين لديهم مهام متأخرة</div><div class="card-body py-1 list-compact">
+    {% for e in with_overdue %}<div class="item"><span class="avatar sm">{{ e.name|initials }}</span><div class="flex-grow-1">{{ e.name }}</div><a href="{% url 'tasks:unit' %}?employee={{ e.id }}&flag=late" class="badge bg-danger">{{ e.overdue }} متأخرة</a></div>
+    {% empty %}{% include "partials/empty.html" with icon="bi-emoji-smile" title="لا يوجد تأخير" %}{% endfor %}
+  </div></div></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4">{% include "dashboard/_mini.html" with tasks=pending title="بانتظار اعتمادك" icon="bi-patch-question" empty="لا توجد طلبات اعتماد" %}</div>
+  <div class="col-lg-4">{% include "dashboard/_mini.html" with tasks=stalled title="المتعثرة" icon="bi-exclamation-octagon" empty="لا توجد مهام متعثرة" %}</div>
+  <div class="col-lg-4">{% include "dashboard/_mini.html" with tasks=critical title="الحرجة" icon="bi-lightning-charge" empty="لا توجد مهام حرجة" %}</div>
+</div>
+{% endblock %}
+{% block scripts %}<script>renderChart("empChart", {{ emp_chart|safe }}); renderChart("loadChart", {{ load_chart|safe }});</script>{% endblock %}

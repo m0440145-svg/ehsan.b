@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}الاجتماعات{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'meetings:decisions' %}">القرارات</a></li><li class="breadcrumb-item active">الاجتماعات</li>{% endblock %}
+{% block page_title %}الاجتماعات{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-8"><div class="card">
+    <div class="table-responsive"><table class="table table-hover">
+      <thead><tr><th>رقم الاجتماع</th><th>الاجتماع</th><th>اللجنة</th><th>التاريخ</th><th>القرارات</th><th></th></tr></thead>
+      <tbody>{% for m in meetings %}<tr>
+        <td class="task-no">{{ m.number }}</td><td class="fw-semibold">{{ m.title }}</td><td class="small">{{ m.committee }}</td><td class="small">{{ m.date|date:"Y-m-d" }}</td>
+        <td><a href="{% url 'meetings:decisions' %}?meeting={{ m.pk }}" class="badge badge-soft">{{ m.n }} قرار</a></td>
+        <td>{% if user|can:"decisions.manage" %}<a href="{% url 'meetings:decision_create' %}?meeting={{ m.pk }}" class="btn btn-soft btn-sm"><i class="bi bi-plus"></i> قرار</a>{% endif %}</td>
+      </tr>{% empty %}<tr><td colspan="6">{% include "partials/empty.html" with icon="bi-people" title="لا توجد اجتماعات" %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div></div>
+  {% if user|can:"decisions.manage" %}
+  <div class="col-lg-4"><div class="card"><div class="card-header"><i class="bi bi-plus-circle"></i> اجتماع جديد</div><div class="card-body">
+    <form method="post" class="row g-2">{% csrf_token %}
+      {% for f in form %}{% include "partials/form_field.html" with field=f col="col-12" %}{% endfor %}
+      <datalist id="committees">{% for c in committees %}<option value="{{ c }}">{% endfor %}</datalist>
+      <div class="col-12"><button class="btn btn-brand w-100">حفظ الاجتماع</button></div>
+    </form>
+  </div></div></div>
+  {% endif %}
+</div>
+{% endblock %}

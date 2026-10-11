@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}قرار {{ d.number }}{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'meetings:decisions' %}">القرارات</a></li><li class="breadcrumb-item active">{{ d.number }}</li>{% endblock %}
+{% block page_title %}<i class="bi bi-journal-text text-brand"></i> القرار رقم {{ d.number }}{% endblock %}
+{% block page_sub %}{{ d.meeting.number }} – {{ d.meeting.title }} · {{ d.meeting.committee }}{% endblock %}
+{% block page_actions %}{% if user|can:"decisions.manage" and d.status != 'cancelled' %}<a href="{% url 'meetings:convert' d.pk %}" class="btn btn-brand"><i class="bi bi-arrow-left-right"></i> تحويل إلى مهمة</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-lg-8"><div class="card h-100"><div class="card-header"><i class="bi bi-quote"></i> نص القرار</div><div class="card-body">
+    <p style="white-space:pre-line" class="fs-6">{{ d.text }}</p>
+    <div class="meta-grid mt-3">
+      <div class="meta-item"><div class="k">تاريخ القرار</div><div class="v">{{ d.decision_date|date:"Y-m-d" }}</div></div>
+      <div class="meta-item"><div class="k">الموعد المستهدف</div><div class="v">{{ d.due_date|date:"Y-m-d"|default:"—" }}</div></div>
+      <div class="meta-item"><div class="k">اللجنة</div><div class="v">{{ d.meeting.committee }}</div></div>
+      <div class="meta-item"><div class="k">المسؤول عن المتابعة</div><div class="v">{{ d.followup_owner.full_name|default:"—" }}</div></div>
+      <div class="meta-item"><div class="k">الحالة</div><div class="v"><span class="badge badge-soft">{{ d.get_status_display }}</span></div></div>
+    </div>
+    {% if d.attachments.all %}<hr><div class="small fw-bold mb-1">المرفقات</div>{% for a in d.attachments.all %}<a href="{% url 'meetings:attachment' a.pk %}" class="badge badge-soft"><i class="bi bi-paperclip"></i> {{ a.original_name }}</a> {% endfor %}{% endif %}
+  </div></div></div>
+  <div class="col-lg-4"><div class="card h-100"><div class="card-header"><i class="bi bi-speedometer"></i> نسبة تنفيذ القرار</div><div class="card-body">
+    <div class="text-center mb-3"><div class="display-5 fw-bold text-brand" style="font-family:Cairo">{{ d.implementation_pct }}%</div>{% progress_bar d.implementation_pct None "lg" %}</div>
+    <div class="row text-center small g-2">
+      <div class="col-3"><div class="fw-bold fs-5">{{ stats.total }}</div>المهام</div>
+      <div class="col-3"><div class="fw-bold fs-5 text-success">{{ stats.done }}</div>المكتملة</div>
+      <div class="col-3"><div class="fw-bold fs-5 text-danger">{{ stats.late }}</div>المتأخرة</div>
+      <div class="col-3"><div class="fw-bold fs-5 text-stalled">{{ stats.stalled }}</div>المتعثرة</div>
+    </div>
+    <div class="form-text mt-3"><i class="bi bi-info-circle"></i> تُحتسب المهمة 100% فقط بعد اعتماد إنجازها.</div>
+  </div></div></div>
+</div>
+<div class="card"><div class="card-header"><i class="bi bi-diagram-2"></i> المهام الناتجة عن القرار{% if hidden %}<small class="text-muted me-2">({{ hidden }} مهمة غير ظاهرة لصلاحياتك)</small>{% endif %}</div>
+  {% include "tasks/_table.html" with tasks=tasks empty_icon="bi-arrow-left-right" empty_title="لم يُحوَّل القرار إلى مهام بعد" %}
+</div>
+{% endblock %}

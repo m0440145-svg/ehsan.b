@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ task.number }} – {{ task.title }}{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'tasks:my' %}">المهام</a></li><li class="breadcrumb-item active">{{ task.number }}</li>{% endblock %}
+{% block content %}
+<!-- ===== رأس المهمة ===== -->
+<div class="task-hero mb-3">
+  <div class="d-flex flex-wrap justify-content-between gap-3">
+    <div class="flex-grow-1" style="min-width:280px">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="task-no fs-6">{{ task.number }}</span>
+        {% status_badge task.status %} {% priority_badge task.priority %}
+        {% if task.confidentiality != 'normal' %}<span class="badge badge-soft"><i class="bi bi-shield-lock"></i> {{ task.get_confidentiality_display }}</span>{% endif %}
+        {% if task.flag_needs_followup %}<span class="flag flag-followup"><i class="bi bi-eye"></i> بحاجة متابعة</span>{% endif %}
+        {% if task.flag_at_risk %}<span class="flag flag-risk"><i class="bi bi-exclamation-triangle"></i> مرشحة للتعثر</span>{% endif %}
+        {% if task.flag_stale %}<span class="flag flag-stale"><i class="bi bi-clock-history"></i> بدون تحديث</span>{% endif %}
+        {% if task.escalation_level %}<span class="flag flag-esc"><i class="bi bi-graph-up-arrow"></i> مصعدة – المستوى {{ task.escalation_level }}</span>{% endif %}
+        {% if open_obstacles_count %}<span class="flag flag-risk"><i class="bi bi-exclamation-octagon"></i> {{ open_obstacles_count }} عائق مفتوح</span>{% endif %}
+      </div>
+      <h1>{{ task.title }}</h1>
+      <div style="max-width:520px">{% progress_bar task.progress task "lg" %}</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 align-items-start no-print">
+      {% if perms.progress %}<button class="btn btn-brand" data-bs-toggle="modal" data-bs-target="#progressModal"><i class="bi bi-graph-up-arrow"></i> تحديث الإنجاز</button>{% endif %}
+      {% if perms.obstacle %}<button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#obstacleModal"><i class="bi bi-exclamation-octagon"></i> تسجيل عائق / تعثر</button>{% endif %}
+      {% if perms.approve %}<button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approvalModal" style="background:#6f42c1;border-color:#6f42c1"><i class="bi bi-patch-check"></i> الاعتماد</button>{% endif %}
+      <div class="dropdown">
+        <button class="btn btn-soft" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i> المزيد</button>
+        <ul class="dropdown-menu dropdown-menu-start">
+          {% if perms.edit %}<li><a class="dropdown-item" href="{% url 'tasks:edit' task.pk %}"><i class="bi bi-pencil ms-2"></i>تعديل المهمة</a></li>{% endif %}
+          {% if transition_form.fields.to.choices %}<li><button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#transitionModal"><i class="bi bi-arrow-repeat ms-2"></i>تغيير الحالة</button></li>{% endif %}
+          {% if perms.escalate %}<li><button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#escalateOne"><i class="bi bi-graph-up-arrow ms-2"></i>تصعيد</button></li>{% endif %}
+          <li><button class="dropdown-item" onclick="window.print()"><i class="bi bi-printer ms-2"></i>طباعة</button></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <hr>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="k">المسؤول الرئيسي</div><div class="v"><span class="person"><span class="avatar sm">{{ task.owner.full_name|initials }}</span>{{ task.owner.full_name }}</span></div></div>
+    <div class="meta-item"><div class="k">المشاركون</div><div class="v">{% for e in task.participants %}<span class="person"><span class="avatar sm">{{ e.full_name|initials }}</span>{{ e.full_name }}</span>{% empty %}—{% endfor %}</div></div>
+    <div class="meta-item"><div class="k">الوحدة القائدة</div><div class="v"><i class="bi bi-diagram-3 text-brand"></i> {{ task.unit.name }}</div>
+      {% if task.participant_units %}<div class="small text-muted mt-1">مشاركة: {% for u in task.participant_units %}{{ u.name }}{% if not forloop.last %}، {% endif %}{% endfor %}</div>{% endif %}</div>
+    <div class="meta-item"><div class="k">تاريخ البدء / الاستحقاق</div><div class="v">{{ task.start_date|date:"Y-m-d" }} ← {{ task.due_date|date:"Y-m-d" }}</div></div>
+    <div class="meta-item"><div class="k">الأيام المتبقية</div><div class="v">{% days_badge task %}</div></div>
+    <div class="meta-item"><div class="k">المصدر</div><div class="v">{{ task.get_source_display }}{% if task.source_reference %} <small class="text-muted">({{ task.source_reference }})</small>{% endif %}</div></div>
+    {% if decision %}
+    <div class="meta-item"><div class="k">القرار المرتبط</div><div class="v"><a href="{{ decision.get_absolute_url }}"><i class="bi bi-journal-check"></i> قرار {{ decision.number }}</a></div></div>
+    <div class="meta-item"><div class="k">الاجتماع المرتبط</div><div class="v">{{ decision.meeting.number }} – {{ decision.meeting.title }}</div></div>
+    {% endif %}
+    <div class="meta-item"><div class="k">أنشأها</div><div class="v">{{ task.created_by.full_name|default:"—" }} <small class="text-muted">{{ task.created_at|date:"Y-m-d" }}</small></div></div>
+    <div class="meta-item"><div class="k">آخر تحديث</div><div class="v">{{ task.last_activity_at|since }}</div></div>
+  </div>
+</div>
+
+<!-- ===== التبويبات ===== -->
+<ul class="nav nav-tabs-soft mb-3 no-print" role="tablist">
+  {% for key, label, icon in tabs %}
+  <li class="nav-item"><button class="nav-link {% if tab == key %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-{{ key }}" type="button"><i class="bi {{ icon }}"></i> {{ label }}
+    {% if key == "subtasks" %}<span class="count">{{ subtasks|length }}</span>{% elif key == "updates" %}<span class="count">{{ updates|length }}</span>{% elif key == "comments" %}<span class="count">{{ comments|length }}</span>{% elif key == "attachments" %}<span class="count">{{ attachments|length }}</span>{% elif key == "obstacles" %}<span class="count">{{ obstacles|length }}</span>{% endif %}
+  </button></li>
+  {% endfor %}
+</ul>
+
+<div class="tab-content">
+  <!-- التفاصيل -->
+  <div class="tab-pane fade {% if tab == 'details' %}show active{% endif %}" id="tab-details">
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <div class="card mb-3"><div class="card-header"><i class="bi bi-text-paragraph"></i> الوصف</div><div class="card-body" style="white-space:pre-line">{{ task.description|default:"—" }}</div></div>
+        <div class="row g-3">
+          <div class="col-md-6"><div class="card h-100"><div class="card-header"><i class="bi bi-bullseye"></i> النتيجة المطلوبة</div><div class="card-body">{{ task.expected_result|default:"—"|linebreaksbr }}</div></div></div>
+          <div class="col-md-6"><div class="card h-100"><div class="card-header"><i class="bi bi-speedometer"></i> مؤشر النجاح</div><div class="card-body">{{ task.success_indicator|default:"—" }}</div></div></div>
+        </div>
+        {% if task.notes %}<div class="card mt-3"><div class="card-header"><i class="bi bi-sticky"></i> ملاحظات</div><div class="card-body">{{ task.notes|linebreaksbr }}</div></div>{% endif %}
+      </div>
+      <div class="col-lg-4">
+        <div class="card mb-3"><div class="card-header"><i class="bi bi-signpost-split"></i> مسار الحالات</div><div class="card-body">
+          <div class="timeline">
+            {% for h in status_history %}
+            <div class="tl-item"><span class="tl-dot" style="--c:{% if h.to_status == 'closed' or h.to_status == 'completed' %}#198754{% elif h.to_status == 'stalled' or h.to_status == 'overdue' %}#dc3545{% else %}#cf6028{% endif %}"></span>
+              <div>{% status_badge h.to_status %}</div>
+              <div class="tl-meta mt-1">{{ h.changed_by.full_name|default:"النظام (آلي)" }} · {{ h.created_at|date:"Y-m-d H:i" }}</div>
+              {% if h.note %}<div class="small">{{ h.note }}</div>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div></div>
+        <div class="card"><div class="card-header"><i class="bi bi-graph-up-arrow"></i> التصعيدات والتنبيهات</div>
+          <div class="list-compact card-body py-1">
+            {% for e in escalations %}
+            <div class="item"><i class="bi {% if e.kind == 'escalate' %}bi-graph-up-arrow text-danger{% else %}bi-bell text-warning{% endif %}"></i>
+              <div class="small"><div>{{ e.reason|default:e.rule.name }}</div><div class="text-muted">{{ e.escalated_to.full_name|default:"—" }} · {{ e.created_at|date:"Y-m-d" }} · {% if e.is_manual %}يدوي{% else %}آلي{% endif %}</div></div></div>
+            {% empty %}<div class="text-muted small py-2">لا توجد تصعيدات</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- المهام الفرعية -->
+  <div class="tab-pane fade {% if tab == 'subtasks' %}show active{% endif %}" id="tab-subtasks">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-diagram-2"></i> المهام الفرعية
+        {% if task.auto_progress %}<span class="badge bg-brand-subtle text-brand me-auto"><i class="bi bi-calculator"></i> نسبة المهمة تُحتسب تلقائيًا من الفرعية</span>{% endif %}</div>
+      <div class="table-responsive"><table class="table">
+        <thead><tr><th>#</th><th>العنوان</th><th>المسؤول</th><th>الموعد</th><th>الحالة</th><th>الإنجاز</th><th>تعليق / مرفقات</th>{% if perms.progress %}<th class="no-print">تحديث</th>{% endif %}</tr></thead>
+        <tbody>
+        {% for s in subtasks %}
+          <tr>
+            <td>{{ forloop.counter }}</td><td class="fw-semibold">{{ s.title }}</td><td class="small">{{ s.assignee.full_name|default:"—" }}</td>
+            <td class="small">{{ s.due_date|date:"Y-m-d"|default:"—" }}</td><td><span class="badge badge-soft">{{ s.get_status_display }}</span></td>
+            <td style="min-width:120px">{% progress_bar s.progress %}</td>
+            <td class="small">{{ s.comment|default:"" }}{% for a in s.attachments.all %}<a href="{% url 'tasks:attachment' a.pk %}" class="d-block"><i class="bi {{ a.icon }}"></i> {{ a.original_name|truncatechars:25 }}</a>{% endfor %}</td>
+            {% if perms.progress or s.assignee_id == user_employee.pk %}
+            <td class="no-print" style="min-width:330px">
+              <form method="post" action="{% url 'tasks:subtask_update' task.pk s.pk %}" enctype="multipart/form-data" class="d-flex gap-1 flex-wrap">{% csrf_token %}
+                <select name="status" class="form-select form-select-sm w-auto">{% for v, l in subtask_statuses %}<option value="{{ v }}" {% if v == s.status %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+                <input type="number" name="progress" min="0" max="100" value="{{ s.progress }}" class="form-control form-control-sm" style="width:70px">
+                <input type="text" name="comment" value="{{ s.comment }}" placeholder="تعليق" class="form-control form-control-sm" style="width:110px">
+                <input type="file" name="attachments" class="form-control form-control-sm" style="width:110px">
+                <button class="btn btn-brand btn-sm"><i class="bi bi-check2"></i></button>
+              </form>
+            </td>{% endif %}
+          </tr>
+        {% empty %}<tr><td colspan="8">{% include "partials/empty.html" with icon="bi-diagram-2" title="لا توجد مهام فرعية" text="قسّم المهمة إلى خطوات قابلة للمتابعة" %}</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+    {% if perms.subtask %}
+    <div class="card no-print"><div class="card-header"><i class="bi bi-plus-circle"></i> إضافة مهمة فرعية</div><div class="card-body">
+      <form method="post" action="{% url 'tasks:subtask_add' task.pk %}" class="row g-2 align-items-end">{% csrf_token %}
+        {% include "partials/form_field.html" with field=subtask_form.title col="col-md-4" %}
+        {% include "partials/form_field.html" with field=subtask_form.assignee col="col-md-3" %}
+        {% include "partials/form_field.html" with field=subtask_form.due_date col="col-md-2" %}
+        {% include "partials/form_field.html" with field=subtask_form.comment col="col-md-2" %}
+        <div class="col-md-1"><button class="btn btn-brand w-100"><i class="bi bi-plus-lg"></i></button></div>
+      </form>
+    </div></div>
+    {% endif %}
+  </div>
+
+  <!-- التحديثات -->
+  <div class="tab-pane fade {% if tab == 'updates' %}show active{% endif %}" id="tab-updates">
+    <div class="card"><div class="card-header"><i class="bi bi-graph-up"></i> سجل تحديثات الإنجاز</div><div class="card-body">
+      <div class="timeline">
+      {% for u in updates %}
+        <div class="tl-item"><span class="tl-dot" style="--c:{% if u.progress_after == 100 %}#198754{% else %}#1c6dd0{% endif %}"></span>
+          <div class="tl-card">
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+              <strong>{{ u.user.full_name }}</strong>
+              <span class="tl-meta"><i class="bi bi-calendar3"></i> {{ u.update_date|date:"Y-m-d" }} · {{ u.created_at|date:"H:i" }}</span>
+            </div>
+            <div class="my-2"><span class="diff-old">{{ u.progress_before }}%</span> <i class="bi bi-arrow-left"></i> <span class="diff-new">{{ u.progress_after }}%</span></div>
+            <div class="small"><strong>التعليق:</strong> {{ u.comment }}</div>
+            <div class="small"><strong>الأعمال المنجزة:</strong> {{ u.done_work|linebreaksbr }}</div>
+            {% if u.remaining_work %}<div class="small"><strong>الأعمال المتبقية:</strong> {{ u.remaining_work|linebreaksbr }}</div>{% endif %}
+            {% for a in u.attachments.all %}<a href="{% url 'tasks:attachment' a.pk %}" class="badge badge-soft mt-1"><i class="bi {{ a.icon }}"></i> {{ a.original_name }}</a>{% endfor %}
+          </div>
+        </div>
+      {% empty %}{% include "partials/empty.html" with icon="bi-graph-up" title="لا توجد تحديثات بعد" %}{% endfor %}
+      </div>
+    </div></div>
+  </div>
+
+  <!-- المتابعة والردود -->
+  <div class="tab-pane fade {% if tab == 'comments' %}show active{% endif %}" id="tab-comments">
+    <div class="card"><div class="card-header"><i class="bi bi-chat-square-text"></i> المتابعة والردود</div><div class="card-body">
+      <div class="timeline">
+      {% for c in comments %}
+        <div class="tl-item"><span class="tl-dot" style="--c:{% if c.obstacle_id %}#8b1a1a{% else %}#cf6028{% endif %}"></span>
+          <div class="tl-card {% if c.obstacle_id %}obstacle{% endif %}">
+            <div class="d-flex justify-content-between flex-wrap gap-2 align-items-center">
+              <span><span class="avatar sm ms-1">{{ c.author.full_name|initials }}</span><strong>{{ c.author.full_name|default:"—" }}</strong></span>
+              <span class="tl-meta"><i class="bi bi-clock"></i> {{ c.created_at|date:"Y-m-d" }} · {{ c.created_at|date:"H:i" }}</span>
+            </div>
+            <div class="mt-2" style="white-space:pre-line">{{ c.body }}</div>
+            {% for a in c.attachments.all %}<a href="{% url 'tasks:attachment' a.pk %}" class="badge badge-soft mt-1"><i class="bi {{ a.icon }}"></i> {{ a.original_name }}</a>{% endfor %}
+            {% if perms.comment %}<div class="mt-2"><button type="button" class="btn btn-link btn-sm p-0" data-reply-to="{{ c.pk }}" data-reply-name="{{ c.author.full_name }}"><i class="bi bi-reply"></i> رد</button></div>{% endif %}
+            {% for r in c.replies.all %}
+              <div class="tl-reply">
+                <div class="d-flex justify-content-between flex-wrap"><strong class="small">{{ r.author.full_name }}</strong><span class="tl-meta">{{ r.created_at|date:"Y-m-d H:i" }}</span></div>
+                <div class="small" style="white-space:pre-line">{{ r.body }}</div>
+                {% for a in r.attachments.all %}<a href="{% url 'tasks:attachment' a.pk %}" class="badge badge-soft"><i class="bi {{ a.icon }}"></i> {{ a.original_name }}</a>{% endfor %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% empty %}{% include "partials/empty.html" with icon="bi-chat-dots" title="لا توجد ردود بعد" text="ابدأ الحوار حول المهمة" %}{% endfor %}
+      </div>
+      <div id="comments-end"></div>
+      {% if perms.comment %}
+      <form method="post" action="{% url 'tasks:comment' task.pk %}" enctype="multipart/form-data" id="commentForm" class="border-top pt-3 no-print">{% csrf_token %}
+        {{ comment_form.parent }}
+        <div id="replyingTo" class="alert alert-light border py-1 px-2 small d-none d-flex align-items-center gap-2">رد على: <span class="fw-bold"></span><button type="button" class="btn-close ms-0 me-auto" style="font-size:.6rem"></button></div>
+        <div class="mb-2"><textarea name="body" class="form-control" rows="3" data-mentions="{% url 'tasks:mentions' %}" placeholder="اكتب ردك... استخدم @ للإشارة إلى موظف أو وحدة"></textarea></div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+          <input type="file" name="attachments" multiple class="form-control w-auto" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp">
+          <button class="btn btn-brand me-auto"><i class="bi bi-send"></i> إرسال</button>
+        </div>
+      </form>
+      {% endif %}
+    </div></div>
+  </div>
+
+  <!-- المرفقات -->
+  <div class="tab-pane fade {% if tab == 'attachments' %}show active{% endif %}" id="tab-attachments">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-paperclip"></i> المرفقات</div>
+      <div class="table-responsive"><table class="table">
+        <thead><tr><th>الملف</th><th>النوع</th><th>الحجم</th><th>رفعه</th><th>التاريخ</th><th></th></tr></thead>
+        <tbody>{% for a in attachments %}<tr>
+          <td><i class="bi {{ a.icon }} text-brand fs-5 align-middle"></i> {{ a.original_name }}</td><td class="small">{{ a.kind }}</td><td class="small">{{ a.size|filesize }}</td>
+          <td class="small">{{ a.uploaded_by.full_name|default:"—" }}</td><td class="small">{{ a.created_at|date:"Y-m-d H:i" }}</td>
+          <td class="text-nowrap">{% if a.kind == 'image' or a.kind == 'pdf' %}<a href="{% url 'tasks:attachment' a.pk %}?inline=1" target="_blank" class="btn btn-soft btn-sm"><i class="bi bi-eye"></i></a>{% endif %}
+            <a href="{% url 'tasks:attachment' a.pk %}" class="btn btn-soft btn-sm"><i class="bi bi-download"></i></a></td>
+        </tr>{% empty %}<tr><td colspan="6">{% include "partials/empty.html" with icon="bi-folder2-open" title="لا توجد مرفقات" %}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% if perms.progress or perms.manager %}
+      <div class="card-body border-top no-print">
+        <form method="post" action="{% url 'tasks:upload' task.pk %}" enctype="multipart/form-data" class="d-flex gap-2 flex-wrap">{% csrf_token %}
+          <input type="file" name="attachments" multiple required class="form-control w-auto" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp,.pptx,.txt">
+          <button class="btn btn-brand"><i class="bi bi-cloud-upload"></i> رفع</button>
+          <small class="text-muted align-self-center">المسموح: صور، PDF، Word، Excel – حتى 20 ميجابايت – يتم فحص محتوى الملف</small>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- العوائق -->
+  <div class="tab-pane fade {% if tab == 'obstacles' %}show active{% endif %}" id="tab-obstacles">
+    {% for o in obstacles %}
+    <div class="card mb-3 {% if o.is_open %}border-danger-subtle{% endif %}">
+      <div class="card-header"><i class="bi bi-exclamation-octagon {% if o.is_open %}text-danger{% else %}text-success{% endif %}"></i> {{ o.get_obstacle_type_display }}
+        <span class="badge {% if o.status == 'resolved' %}bg-success{% elif o.status == 'responded' %}bg-info{% else %}bg-danger{% endif %} me-2">{{ o.get_status_display }}</span>
+        <span class="badge badge-soft">التأثير: {{ o.get_impact_display }}</span>
+        {% if o.needs_admin_decision %}<span class="badge bg-purple">يحتاج قرارًا إداريًا</span>{% endif %}
+        <small class="text-muted me-auto">{{ o.created_by.full_name }} · {{ o.created_at|date:"Y-m-d H:i" }} · مدة {{ o.duration_days }} يوم</small>
+      </div>
+      <div class="card-body">
+        <div class="row g-2 small mb-2">
+          <div class="col-md-12"><strong>وصف المشكلة:</strong> {{ o.description }}</div>
+          <div class="col-md-4"><strong>الجهة المسببة:</strong> {{ o.cause_party|default:"—" }}</div>
+          <div class="col-md-4"><strong>المطلوب منه التدخل:</strong> {{ o.intervener.full_name|default:"—" }}</div>
+          <div class="col-md-4"><strong>تاريخ متوقع للحل:</strong> {{ o.expected_resolution_date|date:"Y-m-d"|default:"—" }}</div>
+          <div class="col-md-12"><strong>الإجراء المطلوب:</strong> {{ o.required_action|default:"—" }}</div>
+        </div>
+        {% for a in o.attachments.all %}<a href="{% url 'tasks:attachment' a.pk %}" class="badge badge-soft"><i class="bi {{ a.icon }}"></i> {{ a.original_name }}</a>{% endfor %}
+        {% if o.response %}<div class="alert alert-light border mt-2 mb-0 small"><strong><i class="bi bi-reply"></i> رد {{ o.responded_by.full_name }}</strong> <span class="text-muted">({{ o.responded_at|date:"Y-m-d H:i" }})</span>: {{ o.response }}</div>{% endif %}
+        {% if o.can_respond %}
+        <form method="post" action="{% url 'tasks:obstacle_respond' task.pk o.pk %}" class="mt-3 no-print">{% csrf_token %}
+          <textarea name="response" class="form-control mb-2" rows="2" placeholder="الرد / التوجيه / القرار المتخذ" required></textarea>
+          <div class="d-flex gap-3 align-items-center"><div class="form-check"><input class="form-check-input" type="checkbox" name="resolve" id="res{{ o.pk }}"><label class="form-check-label" for="res{{ o.pk }}">تمت معالجة العائق</label></div>
+          <button class="btn btn-brand btn-sm me-auto"><i class="bi bi-reply"></i> إرسال الرد</button></div>
+        </form>
+        {% elif o.can_resolve %}
+        <form method="post" action="{% url 'tasks:obstacle_resolve' task.pk o.pk %}" class="mt-3 no-print">{% csrf_token %}
+          <button class="btn btn-outline-success btn-sm" data-confirm="تأكيد معالجة العائق واستئناف التنفيذ؟"><i class="bi bi-check2-circle"></i> تمت المعالجة</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}<div class="card"><div class="card-body">{% include "partials/empty.html" with icon="bi-emoji-smile" title="لا توجد عوائق مسجلة" %}</div></div>{% endfor %}
+  </div>
+
+  <!-- سجل النشاط -->
+  <div class="tab-pane fade {% if tab == 'activity' %}show active{% endif %}" id="tab-activity">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-clock-history"></i> سجل النشاط <small class="text-muted me-2">(غير قابل للحذف أو التعديل)</small></div>
+      <div class="table-responsive"><table class="table table-sm">
+        <thead><tr><th>المستخدم</th><th>الإجراء</th><th>التاريخ</th><th>الوقت</th><th>التفاصيل</th><th>القيم القديمة ← الجديدة</th></tr></thead>
+        <tbody>{% for a in activity %}<tr>
+          <td class="small text-nowrap">{{ a.user.full_name|default:"النظام (آلي)" }}</td>
+          <td><span class="badge badge-soft">{{ a.action_label }}</span></td>
+          <td class="small text-nowrap">{{ a.created_at|date:"Y-m-d" }}</td><td class="small">{{ a.created_at|date:"H:i:s" }}</td>
+          <td class="small" style="max-width:260px">{{ a.description|truncatechars:120 }}</td>
+          <td class="small">
+            {% if a.old_values or a.new_values %}
+              {% for k, v in a.new_values.items %}<div><span class="text-muted">{{ k }}:</span> {% if a.old_values %}<span class="diff-old">{{ a.old_values|get_item:k|default:"—" }}</span> ←{% endif %} <span class="diff-new">{{ v }}</span></div>{% endfor %}
+              {% if not a.new_values %}{% for k, v in a.old_values.items %}<div><span class="text-muted">{{ k }}:</span> <span class="diff-old">{{ v }}</span></div>{% endfor %}{% endif %}
+            {% else %}—{% endif %}
+          </td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== النوافذ ===== -->
+{% if perms.progress %}
+<div class="modal fade" id="progressModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
+  <form method="post" action="{% url 'tasks:progress' task.pk %}" enctype="multipart/form-data">{% csrf_token %}
+    <div class="modal-header"><h6 class="modal-title fw-head"><i class="bi bi-graph-up-arrow text-brand"></i> تحديث نسبة الإنجاز</h6><button type="button" class="btn-close ms-0" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body row g-3">
+      <div class="col-12">
+        <label class="form-label">نسبة الإنجاز: <span id="progressOut" class="text-brand fs-5 fw-bold">{{ task.progress }}%</span></label>
+        <input type="range" class="form-range" name="progress" id="progressRange" min="0" max="100" step="5" value="{{ task.progress }}" data-progress-range="progressOut">
+        <div class="d-flex gap-1 flex-wrap">
+          <button type="button" class="btn btn-soft btn-sm" data-set-progress="0" data-target="#progressRange">0%</button>
+          <button type="button" class="btn btn-soft btn-sm" data-set-progress="25" data-target="#progressRange">25%</button>
+          <button type="button" class="btn btn-soft btn-sm" data-set-progress="50" data-target="#progressRange">50%</button>
+          <button type="button" class="btn btn-soft btn-sm" data-set-progress="75" data-target="#progressRange">75%</button>
+          <button type="button" class="btn btn-soft btn-sm" data-set-progress="100" data-target="#progressRange">100%</button>
+        </div>
+        {% if task.requires_approval %}<div class="form-text"><i class="bi bi-info-circle"></i> عند الوصول إلى 100% تنتقل المهمة إلى «بانتظار الاعتماد» ولا تُغلق مباشرة.</div>{% endif %}
+      </div>
+      <div class="col-md-6"><label class="form-label">تعليق التحديث <span class="required-star">*</span></label><textarea name="comment" class="form-control" rows="2" required></textarea></div>
+      <div class="col-md-6"><label class="form-label">تاريخ التحديث</label><input type="date" name="update_date" class="form-control" value="{% now 'Y-m-d' %}" required></div>
+      <div class="col-md-6"><label class="form-label">الأعمال المنجزة <span class="required-star">*</span></label><textarea name="done_work" class="form-control" rows="3" required></textarea></div>
+      <div class="col-md-6"><label class="form-label">الأعمال المتبقية</label><textarea name="remaining_work" class="form-control" rows="3"></textarea></div>
+      <div class="col-12"><label class="form-label">إرفاق ملفات</label><input type="file" name="attachments" multiple class="form-control"></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-soft" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-brand"><i class="bi bi-check2"></i> حفظ التحديث</button></div>
+  </form>
+</div></div></div>
+{% endif %}
+
+{% if perms.obstacle %}
+<div class="modal fade" id="obstacleModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
+  <form method="post" action="{% url 'tasks:obstacle' task.pk %}" enctype="multipart/form-data">{% csrf_token %}
+    <div class="modal-header bg-danger-subtle"><h6 class="modal-title fw-head text-danger"><i class="bi bi-exclamation-octagon"></i> تسجيل عائق / تعثر</h6><button type="button" class="btn-close ms-0" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body row g-3">
+      {% include "partials/form_field.html" with field=obstacle_form.obstacle_type col="col-md-6" %}
+      {% include "partials/form_field.html" with field=obstacle_form.impact col="col-md-6" %}
+      {% include "partials/form_field.html" with field=obstacle_form.description col="col-12" %}
+      {% include "partials/form_field.html" with field=obstacle_form.cause_party col="col-md-6" %}
+      {% include "partials/form_field.html" with field=obstacle_form.intervener col="col-md-6" %}
+      {% include "partials/form_field.html" with field=obstacle_form.required_action col="col-12" %}
+      {% include "partials/form_field.html" with field=obstacle_form.expected_resolution_date col="col-md-6" %}
+      {% include "partials/form_field.html" with field=obstacle_form.needs_admin_decision col="col-md-6" %}
+      {% include "partials/form_field.html" with field=obstacle_form.attachments col="col-12" %}
+      <div class="col-12 small text-muted"><i class="bi bi-info-circle"></i> سيُبلَّغ رئيس الوحدة والشخص المطلوب منه التدخل، وتتحول المهمة إلى «متعثرة» حسب قواعد المتابعة.</div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-soft" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-danger"><i class="bi bi-send"></i> تسجيل العائق</button></div>
+  </form>
+</div></div></div>
+{% endif %}
+
+{% if perms.approve %}
+<div class="modal fade" id="approvalModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <form method="post" action="{% url 'tasks:approve' task.pk %}">{% csrf_token %}
+    <div class="modal-header"><h6 class="modal-title fw-head text-purple"><i class="bi bi-patch-check"></i> اعتماد إنجاز المهمة</h6><button type="button" class="btn-close ms-0" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <p class="small text-muted">أبلغ المسؤول بإنجاز المهمة بنسبة 100%. راجع التحديثات والمرفقات ثم اختر الإجراء.</p>
+      <label class="form-label">الملاحظات <small class="text-muted">(إلزامية عند الرفض أو الإعادة)</small></label>
+      <textarea name="notes" class="form-control" rows="3"></textarea>
+    </div>
+    <div class="modal-footer flex-wrap">
+      <button class="btn btn-success" formaction="{% url 'tasks:approve' task.pk %}" data-confirm="اعتماد الإنجاز وإغلاق المهمة؟" data-confirm-tone="btn-success"><i class="bi bi-check2-circle"></i> اعتماد وإغلاق</button>
+      <button class="btn btn-outline-warning" formaction="{% url 'tasks:return' task.pk %}" data-confirm="إعادة المهمة للتنفيذ؟"><i class="bi bi-arrow-counterclockwise"></i> إعادة للتنفيذ</button>
+      <button class="btn btn-outline-danger" formaction="{% url 'tasks:reject' task.pk %}" data-confirm="رفض الإنجاز؟" data-confirm-tone="btn-danger"><i class="bi bi-x-octagon"></i> رفض الإنجاز</button>
+    </div>
+  </form>
+</div></div></div>
+{% endif %}
+
+{% if transition_form.fields.to.choices %}
+<div class="modal fade" id="transitionModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <form method="post" action="{% url 'tasks:transition' task.pk %}">{% csrf_token %}
+    <div class="modal-header"><h6 class="modal-title fw-head"><i class="bi bi-arrow-repeat text-brand"></i> تغيير الحالة</h6><button type="button" class="btn-close ms-0" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body row g-3">
+      <div class="col-12 small text-muted">الحالة الحالية: {% status_badge task.status %} – تظهر فقط الانتقالات المسموحة في سير العمل.</div>
+      {% include "partials/form_field.html" with field=transition_form.to col="col-12" %}
+      {% include "partials/form_field.html" with field=transition_form.note col="col-12" %}
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-soft" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-brand" data-confirm="تأكيد تغيير حالة المهمة؟">تغيير</button></div>
+  </form>
+</div></div></div>
+{% endif %}
+
+{% if perms.escalate %}
+<div class="modal fade" id="escalateOne" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+  <form method="post" action="{% url 'tasks:escalate' task.pk %}">{% csrf_token %}
+    <div class="modal-header"><h6 class="modal-title fw-head text-danger"><i class="bi bi-graph-up-arrow"></i> تصعيد المهمة</h6><button type="button" class="btn-close ms-0" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body row g-3">
+      {% include "partials/form_field.html" with field=escalate_form.level col="col-12" %}
+      {% include "partials/form_field.html" with field=escalate_form.reason col="col-12" %}
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-soft" data-bs-dismiss="modal">إلغاء</button><button class="btn btn-danger">تصعيد</button></div>
+  </form>
+</div></div></div>
+{% endif %}
+{% endblock %}

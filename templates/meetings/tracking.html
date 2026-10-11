@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}متابعة تنفيذ القرارات{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'meetings:decisions' %}">القرارات</a></li><li class="breadcrumb-item active">متابعة التنفيذ</li>{% endblock %}
+{% block page_title %}متابعة تنفيذ القرارات{% endblock %}
+{% block page_sub %}نسبة تنفيذ كل قرار تُحتسب تلقائيًا من المهام المرتبطة به{% endblock %}
+{% block page_actions %}<button class="btn btn-soft" onclick="window.print()"><i class="bi bi-printer"></i> طباعة</button>{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">{% include "partials/kpi.html" with value=summary.decisions label="إجمالي القرارات" icon="bi-journal-text" %}</div>
+  <div class="col-6 col-md-3">{% include "partials/kpi.html" with value=summary.implemented label="قرارات منفذة" icon="bi-journal-check" color="#198754" %}</div>
+  <div class="col-6 col-md-3">{% include "partials/kpi.html" with value=summary.without_tasks label="قرارات بلا مهام" icon="bi-journal-x" color="#dc3545" %}</div>
+  <div class="col-6 col-md-3">{% include "partials/kpi.html" with value=summary.avg|stringformat:"s"|add:"%" label="متوسط نسبة التنفيذ" icon="bi-speedometer" color="#1c6dd0" %}</div>
+</div>
+<div class="card mb-3 no-print"><div class="card-body"><form class="row g-2">
+  <div class="col-md-5"><select name="meeting" class="form-select"><option value="">كل الاجتماعات</option>{% for m in meetings %}<option value="{{ m.pk }}" {% if request.GET.meeting == m.pk|stringformat:"s" %}selected{% endif %}>{{ m.number }} – {{ m.title }}</option>{% endfor %}</select></div>
+  <div class="col-md-5"><select name="status" class="form-select"><option value="">كل الحالات</option>{% for v, l in statuses %}<option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><button class="btn btn-soft w-100"><i class="bi bi-funnel"></i> تصفية</button></div>
+</form></div></div>
+<div class="card">
+  <div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>رقم القرار</th><th>الاجتماع</th><th>نص القرار</th><th>المهام الناتجة</th><th>المكتملة</th><th>المتأخرة</th><th>المتعثرة</th><th>نسبة التنفيذ</th><th>المسؤول عن المتابعة</th><th>الحالة</th></tr></thead>
+    <tbody>{% for r in rows %}<tr>
+      <td><a href="{{ r.d.get_absolute_url }}" class="fw-bold">{{ r.d.number }}</a></td>
+      <td class="small">{{ r.d.meeting.title|truncatechars:30 }}</td>
+      <td class="small" style="max-width:280px">{{ r.d.text|truncatechars:90 }}</td>
+      <td>{% if r.total %}{{ r.total }}{% else %}<span class="badge bg-danger-subtle text-danger">لا توجد</span>{% endif %}</td>
+      <td class="text-success fw-bold">{{ r.done }}</td><td class="{% if r.late %}text-danger fw-bold{% endif %}">{{ r.late }}</td><td class="{% if r.stalled %}text-stalled fw-bold{% endif %}">{{ r.stalled }}</td>
+      <td style="min-width:130px">{% progress_bar r.d.implementation_pct %}</td>
+      <td class="small">{{ r.d.followup_owner.full_name|default:"—" }}</td>
+      <td><span class="badge badge-soft">{{ r.d.get_status_display }}</span></td>
+    </tr>{% empty %}<tr><td colspan="10">{% include "partials/empty.html" with icon="bi-journal" title="لا توجد قرارات" %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

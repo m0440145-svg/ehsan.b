@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{% if instance %}تعديل موظف{% else %}موظف جديد{% endif %}{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'organization:employees' %}">الموظفون</a></li><li class="breadcrumb-item active">{% if instance %}{{ instance.full_name }}{% else %}جديد{% endif %}</li>{% endblock %}
+{% block page_title %}{% if instance %}تعديل: {{ instance.full_name }}{% else %}موظف جديد{% endif %}{% endblock %}
+{% block page_sub %}البريد والجوال والدور تُدار من حساب المستخدم المرتبط (الإدارة ← المستخدمون){% endblock %}
+{% block content %}
+<div class="card"><div class="card-body">
+  <form method="post" enctype="multipart/form-data" class="row g-3">{% csrf_token %}
+    {% include "partials/form_field.html" with field=form.full_name col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.employee_no col="col-md-3" %}
+    {% include "partials/form_field.html" with field=form.status col="col-md-3" %}
+    {% include "partials/form_field.html" with field=form.job_title col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.manager col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.units col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.primary_unit col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.join_date col="col-md-4" %}
+    {% include "partials/form_field.html" with field=form.photo col="col-md-8" %}
+    <div class="col-12 d-flex gap-2"><button class="btn btn-brand"><i class="bi bi-check2"></i> حفظ</button><a href="{% url 'organization:employees' %}" class="btn btn-soft">إلغاء</a></div>
+  </form>
+</div></div>
+{% endblock %}

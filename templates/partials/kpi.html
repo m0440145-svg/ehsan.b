@@ -1,0 +1,8 @@
+{% if href %}<a href="{{ href }}" class="kpi" style="--c:{{ color|default:'#cf6028' }}">{% else %}<div class="kpi" style="--c:{{ color|default:'#cf6028' }}">{% endif %}
+  <div class="kpi-icon"><i class="bi {{ icon }}"></i></div>
+  <div>
+    <div class="kpi-value">{{ value }}</div>
+    <div class="kpi-label">{{ label }}</div>
+    {% if hint %}<div class="kpi-hint">{{ hint }}</div>{% endif %}
+  </div>
+{% if href %}</a>{% else %}</div>{% endif %}

@@ -1,0 +1,14 @@
+{% load ui %}
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="d-flex justify-content-between align-items-center p-3 border-top flex-wrap gap-2">
+  <small class="text-muted">عرض {{ page_obj.start_index }}–{{ page_obj.end_index }} من {{ page_obj.paginator.count }}</small>
+  <ul class="pagination pagination-sm mb-0">
+    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?{% qs_replace page=page_obj.previous_page_number %}">السابق</a></li>{% endif %}
+    {% for n in page_obj.paginator.page_range %}
+      {% if n == page_obj.number %}<li class="page-item active"><span class="page-link" style="background:var(--brand);border-color:var(--brand)">{{ n }}</span></li>
+      {% elif n > page_obj.number|add:-3 and n < page_obj.number|add:3 %}<li class="page-item"><a class="page-link" href="?{% qs_replace page=n %}">{{ n }}</a></li>{% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?{% qs_replace page=page_obj.next_page_number %}">التالي</a></li>{% endif %}
+  </ul>
+</nav>
+{% endif %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block body %}
+{% if user.is_authenticated %}{{ block.super }}{% else %}
+<div class="d-grid" style="min-height:100vh;place-items:center"><div class="text-center">
+  <div style="font-size:4rem;color:var(--brand)"><i class="bi {{ icon }}"></i></div>
+  <h3>{{ code }} – {{ title }}</h3><p class="text-muted">{{ text }}</p>
+  <a href="{% url 'accounts:login' %}" class="btn btn-brand">تسجيل الدخول</a>
+</div></div>
+{% endif %}
+{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card"><div class="card-body text-center py-5">
+  <div style="font-size:4rem;color:var(--brand)"><i class="bi {{ icon }}"></i></div>
+  <h3 class="mb-2">{{ code }}</h3>
+  <p class="text-muted">{{ text }}</p>
+  <a href="{% url 'dashboard:home' %}" class="btn btn-brand"><i class="bi bi-house"></i> العودة للرئيسية</a>
+</div></div>
+{% endblock %}

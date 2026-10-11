@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}مركز التنبيهات{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item active">مركز التنبيهات</li>{% endblock %}
+{% block page_title %}<i class="bi bi-bell text-brand"></i> مركز التنبيهات{% endblock %}
+{% block page_sub %}التنبيهات داخل النظام · البريد الإلكتروني وWhatsApp قابلة للتفعيل من الإعدادات{% endblock %}
+{% block page_actions %}
+  <form method="post" action="{% url 'notifications:mark_all_read' %}">{% csrf_token %}<button class="btn btn-soft"><i class="bi bi-check2-all"></i> تعليم الكل كمقروء</button></form>
+{% endblock %}
+{% block content %}
+<ul class="nav nav-tabs-soft mb-3">
+  <li class="nav-item"><a class="nav-link {% if not request.GET.filter %}active{% endif %}" href="?">الكل</a></li>
+  <li class="nav-item"><a class="nav-link {% if request.GET.filter == 'unread' %}active{% endif %}" href="?filter=unread">غير المقروءة <span class="count">{{ unread_count }}</span></a></li>
+  <li class="nav-item ms-auto"><form><select name="event" class="form-select form-select-sm" onchange="this.form.submit()"><option value="">كل الأنواع</option>{% for k, l in events %}<option value="{{ k }}" {% if request.GET.event == k %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></form></li>
+</ul>
+<div class="card">
+  <div class="card-body py-1 list-compact">
+    {% for n in page_obj %}
+      <a class="item text-ink {% if not n.is_read %}notif-unread{% endif %}" href="{% url 'notifications:open' n.pk %}">
+        <span class="notif-icon bg-{{ n.tone }}-subtle text-{{ n.tone }}"><i class="bi {{ n.icon }}"></i></span>
+        <div class="flex-grow-1">
+          <div class="{% if not n.is_read %}fw-bold{% endif %}">{{ n.title }}</div>
+          {% if n.body %}<div class="small text-muted">{{ n.body|truncatechars:160 }}</div>{% endif %}
+          <div class="tl-meta"><span class="badge badge-soft">{{ n.event_label }}</span> · {{ n.created_at|date:"Y-m-d H:i" }}{% if n.actor %} · {{ n.actor.full_name }}{% endif %} · {% for c in n.channels %}<i class="bi {% if c == 'email' %}bi-envelope{% elif c == 'whatsapp' %}bi-whatsapp{% else %}bi-display{% endif %}"></i> {% endfor %}</div>
+        </div>
+        {% if not n.is_read %}<span class="badge bg-brand">جديد</span>{% endif %}
+      </a>
+    {% empty %}{% include "partials/empty.html" with icon="bi-bell-slash" title="لا توجد تنبيهات" %}{% endfor %}
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

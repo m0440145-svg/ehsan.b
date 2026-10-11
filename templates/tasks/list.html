@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ title }}{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">المهام</li><li class="breadcrumb-item active">{{ title }}</li>{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_sub %}{{ sub }} – {{ page_obj.paginator.count }} مهمة{% endblock %}
+{% block page_actions %}{% if user|can:"tasks.create" %}<a href="{% url 'tasks:create' %}" class="btn btn-brand"><i class="bi bi-plus-lg"></i> إضافة مهمة</a>{% endif %}{% endblock %}
+{% block content %}
+{% include "tasks/_filters.html" %}
+<div class="card">
+  {% include "tasks/_table.html" with tasks=page_obj show_reason=False %}
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

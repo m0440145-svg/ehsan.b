@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}البحث{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item active">البحث الشامل</li>{% endblock %}
+{% block page_title %}البحث الشامل{% endblock %}
+{% block page_sub %}{% if q %}نتائج «{{ q }}»: {{ page_obj.paginator.count }} مهمة{% else %}ابحث برقم المهمة أو العنوان أو اسم الموظف أو الوحدة أو القرار أو الاجتماع أو كلمات الوصف{% endif %}{% endblock %}
+{% block content %}
+{% include "tasks/_filters.html" %}
+{% if decisions or employees %}
+<div class="row g-3 mb-3">
+  {% if decisions %}<div class="col-lg-7"><div class="card"><div class="card-header"><i class="bi bi-journal-text"></i> قرارات مطابقة</div>
+    <div class="list-group list-group-flush">{% for d in decisions %}<a class="list-group-item list-group-item-action" href="{{ d.get_absolute_url }}"><strong>{{ d.number }}</strong> – {{ d.text|truncatechars:90 }} <small class="text-muted d-block">{{ d.meeting.title }}</small></a>{% endfor %}</div></div></div>{% endif %}
+  {% if employees %}<div class="col-lg-5"><div class="card"><div class="card-header"><i class="bi bi-people"></i> موظفون مطابقون</div>
+    <div class="list-group list-group-flush">{% for e in employees %}<a class="list-group-item list-group-item-action" href="{% url 'organization:employee_detail' e.pk %}"><span class="avatar sm ms-1">{{ e.full_name|initials }}</span> {{ e.full_name }} <small class="text-muted">– {{ e.job_title }}</small></a>{% endfor %}</div></div></div>{% endif %}
+</div>
+{% endif %}
+<div class="card">
+  {% include "tasks/_table.html" with tasks=page_obj empty_icon="bi-search" empty_title="لا توجد نتائج مطابقة" %}
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

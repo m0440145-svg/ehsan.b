@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}قواعد المتابعة{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">الإعدادات</li><li class="breadcrumb-item active">قواعد المتابعة</li>{% endblock %}
+{% block page_title %}<i class="bi bi-cpu text-brand"></i> محرك القواعد (Rule Engine){% endblock %}
+{% block page_sub %}يقيّم المحرك جميع المهام المفتوحة دوريًا ويضع المؤشرات ويحوّل الحالات حسب هذه القواعد{% endblock %}
+{% block page_actions %}<form method="post" action="{% url 'dashboard:run_engine' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-soft" data-confirm="تشغيل المحرك الآن؟"><i class="bi bi-play"></i> تشغيل الآن</button></form>{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7"><div class="card"><div class="card-body">
+    <form method="post" class="row g-3">{% csrf_token %}
+      {% for f in fields %}
+        {% if f.is_bool %}
+          <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="{{ f.key }}" id="r_{{ f.key }}" {% if f.value %}checked{% endif %}><label class="form-check-label" for="r_{{ f.key }}">{{ f.label }}</label></div></div>
+        {% else %}
+          <div class="col-md-6"><label class="form-label small" for="r_{{ f.key }}">{{ f.label }}</label><input class="form-control" type="number" min="0" name="{{ f.key }}" id="r_{{ f.key }}" value="{{ f.value }}"></div>
+        {% endif %}
+      {% endfor %}
+      <div class="col-12"><button class="btn btn-brand"><i class="bi bi-check2"></i> حفظ القواعد</button></div>
+    </form>
+  </div></div></div>
+  <div class="col-lg-5"><div class="card"><div class="card-header"><i class="bi bi-lightbulb"></i> كيف تعمل القواعد</div><div class="card-body small">
+    <ul class="pe-3 mb-0">
+      <li class="mb-2">إذا مر أكثر من <strong>30%</strong> من مدة المهمة ونسبة الإنجاز <strong>0%</strong> ← <span class="flag flag-followup">بحاجة متابعة</span></li>
+      <li class="mb-2">إذا مر <strong>70%</strong> من المدة والإنجاز أقل من <strong>30%</strong> ← <span class="flag flag-risk">مرشحة للتعثر</span></li>
+      <li class="mb-2">لم تُحدَّث المهمة لمدة <strong>5 أيام</strong> ← <span class="flag flag-stale">بدون تحديث</span></li>
+      <li class="mb-2">تجاوز تاريخ الاستحقاق والمهمة غير مكتملة ← الحالة <strong>متأخرة</strong></li>
+      <li class="mb-2">تسجيل عائق ← الحالة <strong>متعثرة</strong>، وتعود عند معالجة العائق</li>
+      <li>يعمل المحرك تلقائيًا كل N دقيقة، ويمكن جدولته: <code class="ltr">python manage.py run_task_engine</code></li>
+    </ul>
+  </div></div></div>
+</div>
+{% endblock %}

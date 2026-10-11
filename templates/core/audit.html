@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}سجل التدقيق{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">الإدارة</li><li class="breadcrumb-item active">سجل التدقيق</li>{% endblock %}
+{% block page_title %}<i class="bi bi-journal-code text-brand"></i> سجل التدقيق{% endblock %}
+{% block page_sub %}سجل غير قابل للتعديل أو الحذف (محمي في التطبيق وقاعدة البيانات){% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-body"><form class="row g-2">
+  <div class="col-md-6"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="بحث في الوصف أو المستخدم أو رقم المهمة"></div>
+  <div class="col-md-4"><select name="action" class="form-select"><option value="">كل الإجراءات</option>{% for k, l in actions %}<option value="{{ k }}" {% if request.GET.action == k %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  <div class="col-md-2"><button class="btn btn-soft w-100"><i class="bi bi-funnel"></i></button></div>
+</form></div></div>
+<div class="card"><div class="table-responsive"><table class="table table-sm">
+  <thead><tr><th>التاريخ والوقت</th><th>المستخدم</th><th>الإجراء</th><th>الكائن</th><th>الوصف</th><th>التغييرات</th><th>IP</th></tr></thead>
+  <tbody>{% for a in page_obj %}<tr>
+    <td class="small text-nowrap">{{ a.created_at|date:"Y-m-d H:i:s" }}</td><td class="small">{{ a.user.full_name|default:"النظام" }}</td>
+    <td><span class="badge badge-soft">{{ a.action_label }}</span></td>
+    <td class="small">{% if a.task %}<a href="{{ a.task.get_absolute_url }}">{{ a.task.number }}</a>{% else %}{{ a.object_type }} {{ a.object_id }}{% endif %}</td>
+    <td class="small" style="max-width:280px">{{ a.description|truncatechars:120 }}</td>
+    <td class="small">{% for k, v in a.new_values.items %}<div>{{ k }}: {% if a.old_values %}<span class="diff-old">{{ a.old_values|get_item:k|default:"—"|truncatechars:40 }}</span> ← {% endif %}<span class="diff-new">{{ v|truncatechars:40 }}</span></div>{% endfor %}</td>
+    <td class="small ltr">{{ a.ip_address|default:"" }}</td>
+  </tr>{% endfor %}</tbody>
+</table></div>{% include "partials/pagination.html" %}</div>
+{% endblock %}

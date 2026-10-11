@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}قرارات الاجتماعات{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item active">قرارات الاجتماعات</li>{% endblock %}
+{% block page_title %}قرارات الاجتماعات{% endblock %}
+{% block page_sub %}كل قرار يمكن تحويله إلى مهمة أو عدة مهام مرتبطة به{% endblock %}
+{% block page_actions %}
+  <a href="{% url 'meetings:tracking' %}" class="btn btn-soft"><i class="bi bi-journal-check"></i> متابعة التنفيذ</a>
+  {% if user|can:"decisions.manage" %}<a href="{% url 'meetings:decision_create' %}" class="btn btn-brand"><i class="bi bi-plus-lg"></i> قرار جديد</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-body">
+  <form class="row g-2">
+    <div class="col-md-4"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="رقم القرار أو نصه أو الاجتماع"></div>
+    <div class="col-md-3"><select name="meeting" class="form-select"><option value="">كل الاجتماعات</option>{% for m in meetings %}<option value="{{ m.pk }}" {% if request.GET.meeting == m.pk|stringformat:"s" %}selected{% endif %}>{{ m.number }} – {{ m.title|truncatechars:40 }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><select name="committee" class="form-select"><option value="">كل اللجان</option>{% for c in committees %}<option {% if request.GET.committee == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><select name="status" class="form-select"><option value="">كل الحالات</option>{% for v, l in statuses %}<option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="col-md-1"><button class="btn btn-soft w-100"><i class="bi bi-funnel"></i></button></div>
+  </form>
+</div></div>
+<div class="card">
+  <div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>رقم القرار</th><th>رقم الاجتماع</th><th>الاجتماع</th><th>اللجنة</th><th>نص القرار</th><th>التاريخ</th><th>المهام</th><th>التنفيذ</th><th>الحالة</th><th></th></tr></thead>
+    <tbody>{% for d in page_obj %}<tr>
+      <td><a href="{{ d.get_absolute_url }}" class="fw-bold">{{ d.number }}</a></td>
+      <td class="task-no">{{ d.meeting.number }}</td><td class="small">{{ d.meeting.title|truncatechars:35 }}</td><td class="small">{{ d.meeting.committee }}</td>
+      <td class="small" style="max-width:300px">{{ d.text|truncatechars:110 }}</td><td class="small text-nowrap">{{ d.decision_date|date:"Y-m-d" }}</td>
+      <td><span class="badge badge-soft">{{ d.task_count }}</span></td>
+      <td style="min-width:120px">{% progress_bar d.implementation_pct %}</td>
+      <td><span class="badge badge-soft">{{ d.get_status_display }}</span></td>
+      <td class="text-nowrap">{% if user|can:"decisions.manage" and d.status != 'cancelled' %}<a href="{% url 'meetings:convert' d.pk %}" class="btn btn-brand btn-sm"><i class="bi bi-arrow-left-right"></i> تحويل إلى مهمة</a>{% endif %}</td>
+    </tr>{% empty %}<tr><td colspan="10">{% include "partials/empty.html" with icon="bi-journal" title="لا توجد قرارات" %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

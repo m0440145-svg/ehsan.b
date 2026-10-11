@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{% if instance %}تعديل وحدة{% else %}وحدة جديدة{% endif %}{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'organization:units' %}">الوحدات</a></li><li class="breadcrumb-item active">{% if instance %}{{ instance.name }}{% else %}جديدة{% endif %}</li>{% endblock %}
+{% block page_title %}{% if instance %}تعديل: {{ instance.name }}{% else %}وحدة تنظيمية جديدة{% endif %}{% endblock %}
+{% block content %}
+<div class="card"><div class="card-body">
+  <form method="post" class="row g-3">{% csrf_token %}
+    {% include "partials/form_field.html" with field=form.name col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.code col="col-md-3" %}
+    {% include "partials/form_field.html" with field=form.sort_order col="col-md-3" %}
+    {% include "partials/form_field.html" with field=form.head col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.parent col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.description col="col-12" %}
+    {% include "partials/form_field.html" with field=form.established_on col="col-md-4" %}
+    {% include "partials/form_field.html" with field=form.is_active col="col-md-4" %}
+    <div class="col-12 d-flex gap-2"><button class="btn btn-brand"><i class="bi bi-check2"></i> حفظ</button><a href="{% url 'organization:units' %}" class="btn btn-soft">إلغاء</a></div>
+  </form>
+</div></div>
+{% endblock %}

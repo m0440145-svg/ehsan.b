@@ -1,0 +1,142 @@
+{% load static ui %}<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}{{ PLATFORM_NAME }}{% endblock %} | جمعية الإحسان</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% block body %}
+<div class="app-shell">
+  <aside class="sidebar" aria-label="القائمة الرئيسية">
+    <div class="brand-box">
+      <div class="brand-logo"><i class="bi bi-diagram-3-fill"></i></div>
+      <div>
+        <div class="brand-title">منصة المهام والقرارات</div>
+        <div class="brand-sub">جمعية الإحسان ببريدة</div>
+      </div>
+    </div>
+    <nav>
+      {% for item in menu %}
+        {% if item.children %}
+          <button class="nav-group-btn {% if item.active %}active{% endif %}" data-bs-toggle="collapse" data-bs-target="#nav-{{ forloop.counter }}" aria-expanded="{% if item.active %}true{% else %}false{% endif %}">
+            <i class="bi {{ item.icon }}"></i><span>{{ item.label }}</span><i class="bi bi-chevron-left chev"></i>
+          </button>
+          <div class="collapse {% if item.active %}show{% endif %}" id="nav-{{ forloop.counter }}">
+            <div class="nav-sub">
+              {% for c in item.children %}<a href="{{ c.url }}" class="{% if c.active %}active{% endif %}">{{ c.label }}</a>{% endfor %}
+            </div>
+          </div>
+        {% else %}
+          <a class="nav-item-link {% if item.active %}active{% endif %}" href="{{ item.url }}"><i class="bi {{ item.icon }}"></i><span>{{ item.label }}</span></a>
+        {% endif %}
+      {% endfor %}
+    </nav>
+  </aside>
+  <div class="sidebar-backdrop"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="top-icon d-lg-none" data-toggle-sidebar aria-label="القائمة"><i class="bi bi-list"></i></button>
+      <form class="search" action="{% url 'tasks:search' %}" method="get" role="search">
+        <i class="bi bi-search"></i>
+        <input class="form-control" type="search" name="q" value="{{ request.GET.q|default:'' }}" placeholder="ابحث برقم المهمة أو العنوان أو الموظف أو القرار...">
+      </form>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        {% if user|can:"tasks.create" %}
+        <a href="{% url 'tasks:create' %}" class="btn btn-brand d-none d-md-inline-flex align-items-center gap-1"><i class="bi bi-plus-lg"></i> مهمة جديدة</a>
+        {% endif %}
+        <div class="dropdown">
+          <button class="top-icon" data-bs-toggle="dropdown" aria-label="التنبيهات" data-unread-url="{% url 'notifications:unread_count' %}">
+            <i class="bi bi-bell"></i>{% if unread_count %}<span class="dot">{{ unread_count }}</span>{% endif %}
+          </button>
+          <div class="dropdown-menu dropdown-menu-start notif-menu p-0">
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
+              <strong class="fw-head">التنبيهات</strong>
+              <a href="{% url 'notifications:center' %}" class="small">عرض الكل</a>
+            </div>
+            {% for n in latest_notifications %}
+              <a href="{% url 'notifications:open' n.pk %}" class="d-flex gap-2 px-3 py-2 border-bottom text-ink {% if not n.is_read %}notif-unread{% endif %}">
+                <span class="notif-icon bg-{{ n.tone }}-subtle text-{{ n.tone }}"><i class="bi {{ n.icon }}"></i></span>
+                <span class="small"><span class="d-block fw-semibold">{{ n.title|truncatechars:70 }}</span><span class="text-muted">{{ n.created_at|since }}</span></span>
+              </a>
+            {% empty %}
+              <div class="empty-state py-4"><i class="bi bi-bell-slash"></i><small>لا توجد تنبيهات</small></div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="dropdown">
+          <button class="user-chip" data-bs-toggle="dropdown">
+            <span class="avatar sm">{{ user.full_name|initials }}</span>
+            <span class="d-none d-sm-block text-start lh-sm">
+              <span class="d-block small fw-semibold">{{ user.full_name }}</span>
+              <span class="d-block text-muted" style="font-size:.7rem">{{ user.role.name|default:"—" }}</span>
+            </span>
+            <i class="bi bi-chevron-down small"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-start">
+            <li><a class="dropdown-item" href="{% url 'accounts:profile' %}"><i class="bi bi-person-circle ms-2"></i>ملفي الشخصي</a></li>
+            <li><a class="dropdown-item" href="{% url 'notifications:center' %}"><i class="bi bi-bell ms-2"></i>مركز التنبيهات</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="dropdown-item text-danger"><i class="bi bi-box-arrow-left ms-2"></i>تسجيل الخروج</button></form></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="page-head">
+        <div>
+          <nav aria-label="breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:home' %}"><i class="bi bi-house"></i> الرئيسية</a></li>
+            {% block breadcrumbs %}{% endblock %}
+          </ol></nav>
+          <h1>{% block page_title %}{% endblock %}</h1>
+          <div class="sub">{% block page_sub %}{% endblock %}</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap no-print">{% block page_actions %}{% endblock %}</div>
+      </div>
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}
+
+<div class="toast-container position-fixed bottom-0 start-0 p-3">
+  {% for m in messages %}
+  <div class="toast align-items-center text-bg-{% if m.tags == 'error' %}danger{% elif m.tags == 'warning' %}warning{% elif m.tags == 'info' %}info{% else %}success{% endif %} border-0" role="alert">
+    <div class="d-flex"><div class="toast-body">{{ m }}</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="modal fade" id="confirmModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm"><div class="modal-content">
+    <div class="modal-body text-center p-4">
+      <div class="mb-2" style="font-size:2.2rem;color:var(--brand)"><i class="bi bi-question-circle"></i></div>
+      <h6 class="fw-head">تأكيد الإجراء</h6>
+      <p class="confirm-text text-muted small mb-3"></p>
+      <div class="d-flex gap-2 justify-content-center">
+        <button type="button" class="btn btn-soft" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-brand confirm-ok">تأكيد</button>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/app.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

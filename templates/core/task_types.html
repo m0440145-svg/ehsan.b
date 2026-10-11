@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}أنواع المهام{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">الإعدادات</li><li class="breadcrumb-item active">أنواع المهام</li>{% endblock %}
+{% block page_title %}أنواع المهام{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7"><div class="card"><div class="table-responsive"><table class="table">
+    <thead><tr><th>النوع</th><th>الوصف</th><th>الحالة</th><th></th></tr></thead>
+    <tbody>{% for t in types %}<tr><td class="fw-semibold">{{ t.name }}</td><td class="small text-muted">{{ t.description }}</td><td>{% if t.is_active %}<span class="badge bg-success-subtle text-success">نشط</span>{% else %}<span class="badge bg-secondary">موقوف</span>{% endif %}</td><td><a href="{% url 'core:task_type_edit' t.pk %}" class="btn btn-soft btn-sm"><i class="bi bi-pencil"></i></a></td></tr>
+    {% empty %}<tr><td colspan="4">{% include "partials/empty.html" %}</td></tr>{% endfor %}</tbody>
+  </table></div></div></div>
+  <div class="col-lg-5"><div class="card"><div class="card-header"><i class="bi bi-plus-circle"></i> {% if instance %}تعديل: {{ instance.name }}{% else %}نوع جديد{% endif %}</div><div class="card-body">
+    <form method="post" class="row g-3">{% csrf_token %}{% for f in form %}{% include "partials/form_field.html" with field=f %}{% endfor %}
+      <div class="col-12 d-flex gap-2"><button class="btn btn-brand">حفظ</button>{% if instance %}<a href="{% url 'core:task_types' %}" class="btn btn-soft">جديد</a>{% endif %}</div></form>
+  </div></div></div>
+</div>
+{% endblock %}

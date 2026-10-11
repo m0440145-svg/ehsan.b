@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{% if instance %}تعديل مستخدم{% else %}مستخدم جديد{% endif %}{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'accounts:users' %}">المستخدمون</a></li><li class="breadcrumb-item active">{% if instance %}تعديل{% else %}جديد{% endif %}</li>{% endblock %}
+{% block page_title %}{% if instance %}تعديل: {{ instance.full_name }}{% else %}مستخدم جديد{% endif %}{% endblock %}
+{% block content %}
+<div class="card"><div class="card-body">
+  <form method="post" class="row g-3" autocomplete="off">{% csrf_token %}
+    {% if form.non_field_errors %}<div class="col-12 alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    {% include "partials/form_field.html" with field=form.full_name col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.email col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.phone col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.role col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.employee col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.password col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.is_active col="col-md-4" %}
+    {% include "partials/form_field.html" with field=form.otp_enabled col="col-md-4" %}
+    {% include "partials/form_field.html" with field=form.must_change_password col="col-md-4" %}
+    <div class="col-12 d-flex gap-2"><button class="btn btn-brand"><i class="bi bi-check2"></i> حفظ</button><a href="{% url 'accounts:users' %}" class="btn btn-soft">إلغاء</a></div>
+  </form>
+</div></div>
+{% endblock %}

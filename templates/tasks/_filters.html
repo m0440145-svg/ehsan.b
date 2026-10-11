@@ -1,0 +1,32 @@
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-lg-4 col-md-12"><label class="form-label small">{{ form.q.label }}</label>{{ form.q }}</div>
+    <div class="col-lg-2 col-md-4 col-6"><label class="form-label small">{{ form.unit.label }}</label>{{ form.unit }}</div>
+    <div class="col-lg-2 col-md-4 col-6"><label class="form-label small">{{ form.employee.label }}</label>{{ form.employee }}</div>
+    <div class="col-lg-2 col-md-4 col-6"><label class="form-label small">{{ form.status.label }}</label>{{ form.status }}</div>
+    <div class="col-lg-2 col-md-4 col-6"><label class="form-label small">{{ form.priority.label }}</label>{{ form.priority }}</div>
+    <div class="collapse {% if request.GET.source or request.GET.date_from or request.GET.date_to or request.GET.flag or request.GET.progress_min or request.GET.progress_max %}show{% endif %} col-12" id="moreFilters">
+      <div class="row g-2">
+        <div class="col-lg-2 col-md-4 col-6"><label class="form-label small">{{ form.source.label }}</label>{{ form.source }}</div>
+        <div class="col-lg-2 col-md-4 col-6"><label class="form-label small">{{ form.date_from.label }}</label>{{ form.date_from }}</div>
+        <div class="col-lg-2 col-md-4 col-6"><label class="form-label small">{{ form.date_to.label }}</label>{{ form.date_to }}</div>
+        <div class="col-lg-2 col-md-4 col-6"><label class="form-label small">{{ form.progress_min.label }}</label>{{ form.progress_min }}</div>
+        <div class="col-lg-2 col-md-4 col-6"><label class="form-label small">{{ form.progress_max.label }}</label>{{ form.progress_max }}</div>
+        <div class="col-lg-2 col-md-4 col-6"><label class="form-label small">{{ form.flag.label }}</label>{{ form.flag }}</div>
+      </div>
+    </div>
+    <div class="col-12 d-flex gap-2 flex-wrap">
+      <button class="btn btn-brand"><i class="bi bi-funnel"></i> تطبيق</button>
+      <button type="button" class="btn btn-soft" data-bs-toggle="collapse" data-bs-target="#moreFilters"><i class="bi bi-sliders"></i> فلاتر إضافية</button>
+      <a href="{{ request.path }}" class="btn btn-soft"><i class="bi bi-x-lg"></i> مسح</a>
+      <select class="form-select w-auto ms-auto" name="sort" onchange="this.form.submit()">
+        <option value="due" {% if request.GET.sort == "due" %}selected{% endif %}>الترتيب: الأقرب استحقاقًا</option>
+        <option value="-due" {% if request.GET.sort == "-due" %}selected{% endif %}>الأبعد استحقاقًا</option>
+        <option value="updated" {% if request.GET.sort == "updated" %}selected{% endif %}>آخر تحديث</option>
+        <option value="new" {% if request.GET.sort == "new" %}selected{% endif %}>الأحدث إنشاءً</option>
+        <option value="progress" {% if request.GET.sort == "progress" %}selected{% endif %}>الأقل إنجازًا</option>
+        <option value="-progress" {% if request.GET.sort == "-progress" %}selected{% endif %}>الأعلى إنجازًا</option>
+      </select>
+    </div>
+  </form>
+</div></div>

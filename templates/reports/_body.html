@@ -1,0 +1,22 @@
+{% load ui %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=report.kpis.total label="إجمالي المهام" icon="bi-list-task" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=report.kpis.completion_rate|stringformat:"s"|add:"%" label="نسبة الإنجاز" icon="bi-pie-chart" color="#198754" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=report.kpis.on_time_rate|stringformat:"s"|add:"%" label="الالتزام بالمواعيد" icon="bi-calendar-check" color="#1c6dd0" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=report.kpis.delay_rate|stringformat:"s"|add:"%" label="نسبة التأخير" icon="bi-alarm" color="#dc3545" %}</div>
+  <div class="col-6 col-md-3 col-xl">{% include "partials/kpi.html" with value=report.kpis.stall_rate|stringformat:"s"|add:"%" label="نسبة التعثر" icon="bi-exclamation-octagon" color="#8b1a1a" %}</div>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">{% include "partials/kpi.html" with value=report.kpis.avg_completion_days label="متوسط زمن الإنجاز (يوم)" icon="bi-stopwatch" color="#575650" %}</div>
+  <div class="col-6 col-md-3">{% include "partials/kpi.html" with value=report.kpis.avg_delay_days label="متوسط أيام التأخير" icon="bi-hourglass-bottom" color="#f18927" %}</div>
+  <div class="col-6 col-md-3">{% include "partials/kpi.html" with value=report.kpis.avg_stall_days label="متوسط مدة التعثر (يوم)" icon="bi-sign-stop" color="#8b1a1a" %}</div>
+  <div class="col-6 col-md-3">{% include "partials/kpi.html" with value=report.kpis.critical label="المهام الحرجة المفتوحة" icon="bi-lightning-charge" color="#b02a37" %}</div>
+</div>
+{% if chart %}<div class="card mb-3"><div class="card-header"><i class="bi bi-bar-chart"></i> الرسم البياني</div><div class="card-body"><div class="chart-box lg"><canvas id="reportChart"></canvas></div></div></div>{% endif %}
+<div class="card">
+  <div class="card-header"><i class="bi {{ report.icon }}"></i> {{ report.title }} <span class="badge badge-soft me-2">{{ report.rows|length }} سجل</span></div>
+  <div class="table-responsive"><table class="table table-hover table-sm">
+    <thead><tr>{% for c in report.columns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in report.rows %}<tr>{% for cell in row %}<td class="small">{{ cell }}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="{{ report.columns|length }}">{% include "partials/empty.html" with icon="bi-clipboard-data" title="لا توجد بيانات مطابقة للفلاتر" %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>

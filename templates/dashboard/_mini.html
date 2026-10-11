@@ -1,0 +1,19 @@
+{% load ui %}
+<div class="card h-100">
+  <div class="card-header"><i class="bi {{ icon }}"></i> {{ title }}{% if link %}<a href="{{ link }}" class="small me-auto fw-normal">عرض الكل</a>{% endif %}</div>
+  <div class="card-body py-1 list-compact">
+    {% for t in tasks %}
+      <div class="item">
+        <div class="flex-grow-1 min-w-0">
+          <a href="{{ t.get_absolute_url }}" class="task-title d-block text-truncate">{{ t.title }}</a>
+          <div class="small text-muted"><span class="task-no">{{ t.number }}</span> · {{ t.unit.name }} · {{ t.owner.full_name }}
+            {% for o in t.obstacles.all|slice:":1" %} · <span class="text-stalled"><i class="bi bi-exclamation-octagon"></i> {{ o.get_obstacle_type_display }}</span>{% endfor %}</div>
+          <div class="mt-1" style="max-width:240px">{% progress_bar t.progress t %}</div>
+        </div>
+        <div class="text-end d-flex flex-column gap-1 align-items-end">{% status_badge t.status %}{% days_badge t %}</div>
+      </div>
+    {% empty %}
+      {% include "partials/empty.html" with icon=empty_icon|default:"bi-check2-all" title=empty|default:"لا توجد مهام" %}
+    {% endfor %}
+  </div>
+</div>

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}حالات المهام{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">الإعدادات</li><li class="breadcrumb-item active">حالات المهام</li>{% endblock %}
+{% block page_title %}حالات المهام وسير العمل{% endblock %}
+{% block page_sub %}لا يُسمح بالانتقال بين الحالات إلا وفق هذا الجدول. الانتقالات المظللة يختارها المستخدم يدويًا؛ والبقية تتم عبر إجراءات (الإنجاز 100%، الاعتماد، الإعادة، تسجيل عائق، محرك القواعد).{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-body">
+  <div class="d-flex flex-wrap gap-2 align-items-center small">
+    <strong class="ms-2">المسار الرئيسي:</strong>
+    {% status_badge "new" %}<i class="bi bi-arrow-left"></i>{% status_badge "assigned" %}<i class="bi bi-arrow-left"></i>{% status_badge "in_progress" %}<i class="bi bi-arrow-left"></i>
+    <span class="text-muted">(100%)</span><i class="bi bi-arrow-left"></i>{% status_badge "pending_approval" %}<i class="bi bi-arrow-left"></i><span class="text-muted">(اعتماد)</span><i class="bi bi-arrow-left"></i>{% status_badge "closed" %}
+  </div>
+  <div class="d-flex flex-wrap gap-2 align-items-center small mt-2">
+    <strong class="ms-2">مسارات فرعية:</strong>
+    {% status_badge "pending_approval" %}<i class="bi bi-arrow-left"></i><span class="text-muted">(رفض/إعادة)</span><i class="bi bi-arrow-left"></i>{% status_badge "returned" %} ·
+    {% status_badge "in_progress" %}<i class="bi bi-arrow-left"></i><span class="text-muted">(عائق)</span><i class="bi bi-arrow-left"></i>{% status_badge "stalled" %} ·
+    <span class="text-muted">(تجاوز الاستحقاق)</span><i class="bi bi-arrow-left"></i>{% status_badge "overdue" %}
+  </div>
+</div></div>
+<div class="card"><div class="table-responsive"><table class="table">
+  <thead><tr><th>الحالة</th><th>الرمز</th><th>اللون</th><th>الانتقالات المسموحة منها</th></tr></thead>
+  <tbody>{% for r in rows %}<tr>
+    <td>{% status_badge r.code %}</td><td class="ltr small text-muted">{{ r.code }}</td>
+    <td><span class="d-inline-block rounded" style="width:22px;height:22px;background:{{ r.color }}"></span></td>
+    <td>{% for code, label, manual in r.targets %}<span class="badge {% if manual %}bg-brand-subtle text-brand{% else %}badge-soft{% endif %} ms-1 mb-1">{{ label }}</span>{% empty %}<span class="text-muted small">حالة نهائية</span>{% endfor %}</td>
+  </tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

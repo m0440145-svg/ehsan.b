@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ unit.name }}{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'organization:units' %}">الوحدات</a></li><li class="breadcrumb-item active">{{ unit.name }}</li>{% endblock %}
+{% block page_title %}<i class="bi bi-diagram-3 text-brand"></i> {{ unit.name }}{% endblock %}
+{% block page_sub %}{{ unit.description|truncatechars:150 }}{% endblock %}
+{% block page_actions %}
+  {% if user|can:"dashboard.unit" %}<a href="{% url 'dashboard:unit' %}?unit={{ unit.pk }}" class="btn btn-soft"><i class="bi bi-speedometer2"></i> لوحة الوحدة</a>{% endif %}
+  {% if user|can:"admin.units" %}<a href="{% url 'organization:unit_edit' unit.pk %}" class="btn btn-brand"><i class="bi bi-pencil"></i> تعديل</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md">{% include "partials/kpi.html" with value=kpis.total label="عدد المهام" icon="bi-list-task" %}</div>
+  <div class="col-6 col-md">{% include "partials/kpi.html" with value=kpis.completion_rate|stringformat:"s"|add:"%" label="نسبة الإنجاز" icon="bi-pie-chart" color="#1c6dd0" %}</div>
+  <div class="col-6 col-md">{% include "partials/kpi.html" with value=kpis.overdue label="المتأخرة" icon="bi-alarm" color="#dc3545" %}</div>
+  <div class="col-6 col-md">{% include "partials/kpi.html" with value=kpis.stalled label="المتعثرة" icon="bi-exclamation-octagon" color="#8b1a1a" %}</div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-4"><div class="card h-100">
+    <div class="card-header"><i class="bi bi-info-circle"></i> بيانات الوحدة</div>
+    <div class="card-body small">
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">رئيس الوحدة</span><span>{{ unit.head.full_name|default:"—" }}</span></div>
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">الحالة</span><span>{% if unit.is_active %}نشطة{% else %}موقوفة{% endif %}</span></div>
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">تاريخ الإنشاء</span><span>{{ unit.established_on|date:"Y-m-d" }}</span></div>
+      <div class="d-flex justify-content-between py-2"><span class="text-muted">عدد الموظفين</span><span>{{ employees|length }}</span></div>
+    </div>
+    <div class="card-header border-top"><i class="bi bi-people"></i> الموظفون</div>
+    <div class="card-body py-1 list-compact">
+      {% for e in employees %}<a class="item text-ink" href="{% url 'organization:employee_detail' e.pk %}"><span class="avatar sm">{{ e.full_name|initials }}</span><div class="small">{{ e.full_name }}{% if e.pk == unit.head_id %} <span class="badge bg-brand">رئيس</span>{% endif %}<div class="text-muted">{{ e.job_title }}</div></div></a>
+      {% empty %}{% include "partials/empty.html" with icon="bi-people" title="لا يوجد موظفون" %}{% endfor %}
+    </div>
+  </div></div>
+  <div class="col-lg-8"><div class="card h-100"><div class="card-header"><i class="bi bi-list-task"></i> المهام المفتوحة</div>
+    {% include "tasks/_table.html" with tasks=tasks %}
+  </div></div>
+</div>
+{% endblock %}

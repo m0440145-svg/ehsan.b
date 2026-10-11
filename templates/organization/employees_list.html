@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}الموظفون{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">الإدارة</li><li class="breadcrumb-item active">الموظفون</li>{% endblock %}
+{% block page_title %}الموظفون{% endblock %}
+{% block page_sub %}{{ page_obj.paginator.count }} موظف{% endblock %}
+{% block page_actions %}<a href="{% url 'organization:employee_create' %}" class="btn btn-brand"><i class="bi bi-person-plus"></i> موظف جديد</a>{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-body">
+  <form class="row g-2">
+    <div class="col-md-5"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="بحث بالاسم أو الرقم أو المسمى أو البريد"></div>
+    <div class="col-md-3"><select name="unit" class="form-select"><option value="">كل الوحدات</option>{% for u in units %}<option value="{{ u.pk }}" {% if request.GET.unit == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><select name="status" class="form-select"><option value="">كل الحالات</option>{% for v, l in statuses %}<option value="{{ v }}" {% if request.GET.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><button class="btn btn-soft w-100"><i class="bi bi-funnel"></i> تصفية</button></div>
+  </form>
+</div></div>
+<div class="card">
+  <div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>الموظف</th><th>رقم الموظف</th><th>البريد / الجوال</th><th>الوحدة</th><th>المدير المباشر</th><th>الدور</th><th>الحساب</th><th>الانضمام</th><th>الحالية</th><th>المتأخرة</th><th>المتعثرة</th><th>الإنجاز</th><th></th></tr></thead>
+    <tbody>{% for e in page_obj %}<tr>
+      <td class="text-nowrap"><span class="avatar sm ms-1">{{ e.full_name|initials }}</span><a href="{% url 'organization:employee_detail' e.pk %}" class="fw-semibold text-ink">{{ e.full_name }}</a><div class="small text-muted me-4">{{ e.job_title }}</div></td>
+      <td class="small">{{ e.employee_no }}</td>
+      <td class="small ltr">{{ e.email|default:"—" }}<br>{{ e.phone|default:"" }}</td>
+      <td class="small">{% for u in e.units.all %}{{ u.name }}{% if not forloop.last %}، {% endif %}{% endfor %}</td>
+      <td class="small">{{ e.manager.full_name|default:"—" }}</td>
+      <td class="small">{{ e.user.role.name|default:"—" }}</td>
+      <td>{% if e.user and e.user.is_active %}<span class="badge bg-success-subtle text-success">مفعّل</span>{% elif e.user %}<span class="badge bg-secondary">معطّل</span>{% else %}<span class="badge badge-soft">بلا حساب</span>{% endif %}</td>
+      <td class="small">{{ e.join_date|date:"Y-m-d"|default:"—" }}</td>
+      <td>{{ e.k.open }}</td><td class="{% if e.k.overdue %}text-danger fw-bold{% endif %}">{{ e.k.overdue }}</td><td class="{% if e.k.stalled %}text-stalled fw-bold{% endif %}">{{ e.k.stalled }}</td>
+      <td style="min-width:110px">{% progress_bar e.k.completion_rate %}</td>
+      <td><a href="{% url 'organization:employee_edit' e.pk %}" class="btn btn-soft btn-sm"><i class="bi bi-pencil"></i></a></td>
+    </tr>{% empty %}<tr><td colspan="13">{% include "partials/empty.html" with icon="bi-people" title="لا يوجد موظفون" %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

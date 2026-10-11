@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}المستخدمون{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">الإدارة</li><li class="breadcrumb-item active">المستخدمون</li>{% endblock %}
+{% block page_title %}المستخدمون{% endblock %}
+{% block page_sub %}حسابات الدخول وأدوارها وحالة القفل{% endblock %}
+{% block page_actions %}<a href="{% url 'accounts:user_create' %}" class="btn btn-brand"><i class="bi bi-person-plus"></i> مستخدم جديد</a>{% endblock %}
+{% block content %}
+<div class="card mb-3"><div class="card-body">
+  <form class="row g-2">
+    <div class="col-md-6"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="بحث بالاسم أو البريد أو الجوال"></div>
+    <div class="col-md-4"><select class="form-select" name="role"><option value="">كل الأدوار</option>{% for r in roles %}<option value="{{ r.code }}" {% if request.GET.role == r.code %}selected{% endif %}>{{ r.name }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><button class="btn btn-soft w-100"><i class="bi bi-funnel"></i> تصفية</button></div>
+  </form>
+</div></div>
+<div class="card mb-3">
+  <div class="table-responsive"><table class="table table-hover">
+    <thead><tr><th>المستخدم</th><th>البريد</th><th>الجوال</th><th>الدور</th><th>الموظف المرتبط</th><th>الحالة</th><th></th></tr></thead>
+    <tbody>
+    {% for u in page_obj %}
+      <tr>
+        <td><span class="avatar sm ms-1">{{ u.full_name|initials }}</span> {{ u.full_name }}</td>
+        <td class="ltr small">{{ u.email }}</td>
+        <td class="ltr small">{{ u.phone|default:"—" }}</td>
+        <td><span class="badge badge-soft">{{ u.role.name|default:"—" }}</span></td>
+        <td>{{ u.employee.full_name|default:"—" }}</td>
+        <td>
+          {% if not u.is_active %}<span class="badge bg-secondary">معطل</span>
+          {% elif u.is_locked %}<span class="badge bg-danger">مقفل مؤقتًا</span>
+          {% else %}<span class="badge bg-success">نشط</span>{% endif %}
+        </td>
+        <td class="text-nowrap">
+          <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-soft btn-sm"><i class="bi bi-pencil"></i></a>
+          {% if u.is_locked %}<form method="post" action="{% url 'accounts:user_unlock' u.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-brand btn-sm" data-confirm="فك قفل حساب {{ u.full_name }}؟"><i class="bi bi-unlock"></i></button></form>{% endif %}
+        </td>
+      </tr>
+    {% empty %}<tr><td colspan="7">{% include "partials/empty.html" with icon="bi-people" title="لا يوجد مستخدمون" %}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% include "partials/pagination.html" %}
+</div>
+<div class="card"><div class="card-header"><i class="bi bi-shield-exclamation"></i> سجل محاولات الدخول الأخيرة</div>
+  <div class="table-responsive"><table class="table table-sm">
+    <thead><tr><th>التاريخ</th><th>المعرف</th><th>المستخدم</th><th>IP</th><th>النتيجة</th><th>السبب</th></tr></thead>
+    <tbody>{% for a in attempts %}<tr><td>{{ a.created_at|date:"Y-m-d H:i" }}</td><td class="ltr">{{ a.identifier }}</td><td>{{ a.user|default:"—" }}</td><td class="ltr">{{ a.ip_address }}</td><td>{% if a.success %}<span class="text-success">ناجحة</span>{% else %}<span class="text-danger">فاشلة</span>{% endif %}</td><td class="small text-muted">{{ a.reason }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

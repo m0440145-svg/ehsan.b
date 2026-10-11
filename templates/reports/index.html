@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}التقارير{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item active">التقارير</li>{% endblock %}
+{% block page_title %}التقارير{% endblock %}
+{% block page_sub %}12 تقريرًا مع فلاتر شاملة وتصدير PDF وExcel وCSV والطباعة{% endblock %}
+{% block content %}
+<div class="row g-3">
+  {% for key, title, icon in reports %}
+  <div class="col-sm-6 col-lg-4 col-xl-3">
+    <a href="{% url 'reports:report' key %}" class="kpi"><div class="kpi-icon"><i class="bi {{ icon }}"></i></div><div><div class="fw-bold text-ink">{{ title }}</div><div class="kpi-hint">عرض وتصدير</div></div></a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

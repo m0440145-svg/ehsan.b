@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}لوحة الإدارة التنفيذية{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item active">لوحة الإدارة التنفيذية</li>{% endblock %}
+{% block page_title %}لوحة الإدارة التنفيذية{% endblock %}
+{% block page_sub %}نظرة شاملة على أداء الوحدات وتنفيذ القرارات · {% now "Y-m-d" %}{% endblock %}
+{% block page_actions %}
+  <a href="{% url 'followup:center' %}" class="btn btn-soft"><i class="bi bi-binoculars"></i> مركز المتابعة</a>
+  {% if user|can:"reports.view" %}<a href="{% url 'reports:index' %}" class="btn btn-soft"><i class="bi bi-bar-chart-line"></i> التقارير</a>{% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-4 col-xl"><a class="kpi" href="{% url 'tasks:all' %}" style="--c:#cf6028"><div class="kpi-icon"><i class="bi bi-list-task"></i></div><div><div class="kpi-value">{{ kpis.total }}</div><div class="kpi-label">إجمالي المهام</div></div></a></div>
+  <div class="col-6 col-md-4 col-xl"><a class="kpi" href="{% url 'tasks:all' %}?status=open" style="--c:#575650"><div class="kpi-icon"><i class="bi bi-folder2-open"></i></div><div><div class="kpi-value">{{ kpis.open }}</div><div class="kpi-label">المهام المفتوحة</div></div></a></div>
+  <div class="col-6 col-md-4 col-xl"><a class="kpi" href="{% url 'tasks:all' %}?status=in_progress" style="--c:#1c6dd0"><div class="kpi-icon"><i class="bi bi-play-circle"></i></div><div><div class="kpi-value">{{ kpis.in_progress }}</div><div class="kpi-label">قيد التنفيذ</div></div></a></div>
+  <div class="col-6 col-md-4 col-xl"><div class="kpi" style="--c:#198754"><div class="kpi-icon"><i class="bi bi-check2-circle"></i></div><div><div class="kpi-value">{{ kpis.done }}</div><div class="kpi-label">المكتملة</div></div></div></div>
+  <div class="col-6 col-md-4 col-xl"><a class="kpi" href="{% url 'followup:center' %}?tab=overdue" style="--c:#dc3545"><div class="kpi-icon"><i class="bi bi-alarm"></i></div><div><div class="kpi-value">{{ kpis.overdue }}</div><div class="kpi-label">المتأخرة</div></div></a></div>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-4 col-xl"><a class="kpi" href="{% url 'followup:center' %}?tab=stalled" style="--c:#8b1a1a"><div class="kpi-icon"><i class="bi bi-exclamation-octagon"></i></div><div><div class="kpi-value">{{ kpis.stalled }}</div><div class="kpi-label">المتعثرة</div></div></a></div>
+  <div class="col-6 col-md-4 col-xl"><a class="kpi" href="{% url 'followup:center' %}?tab=critical" style="--c:#b02a37"><div class="kpi-icon"><i class="bi bi-lightning-charge"></i></div><div><div class="kpi-value">{{ kpis.critical }}</div><div class="kpi-label">الحرجة</div></div></a></div>
+  <div class="col-6 col-md-4 col-xl"><a class="kpi" href="{% url 'followup:center' %}?tab=pending_approval" style="--c:#6f42c1"><div class="kpi-icon"><i class="bi bi-patch-question"></i></div><div><div class="kpi-value">{{ kpis.pending }}</div><div class="kpi-label">بانتظار الاعتماد</div></div></a></div>
+  <div class="col-6 col-md-4 col-xl"><div class="kpi" style="--c:#1c6dd0"><div class="kpi-icon"><i class="bi bi-pie-chart"></i></div><div><div class="kpi-value">{{ kpis.completion_rate }}%</div><div class="kpi-label">نسبة الإنجاز</div><div class="kpi-hint">المكتملة ÷ الإجمالي</div></div></div></div>
+  <div class="col-6 col-md-4 col-xl"><div class="kpi" style="--c:#f18927"><div class="kpi-icon"><i class="bi bi-calendar-check"></i></div><div><div class="kpi-value">{{ kpis.on_time_rate }}%</div><div class="kpi-label">الالتزام بالمواعيد</div><div class="kpi-hint">المكتملة في موعدها ÷ المكتملة</div></div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-xl-8"><div class="card h-100"><div class="card-header"><i class="bi bi-bar-chart"></i> أداء الوحدات</div><div class="card-body"><div class="chart-box lg"><canvas id="perfChart"></canvas></div></div></div></div>
+  <div class="col-xl-4"><div class="card h-100"><div class="card-header"><i class="bi bi-pie-chart"></i> توزيع المهام حسب الحالة</div><div class="card-body"><div class="chart-box lg"><canvas id="statusChart"></canvas></div></div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-4"><div class="card h-100"><div class="card-header"><i class="bi bi-trophy"></i> أكثر الوحدات إنجازًا</div><div class="card-body py-1 list-compact">
+    {% for u in top_units %}<div class="item"><span class="badge bg-success rounded-pill">{{ forloop.counter }}</span><div class="flex-grow-1">{{ u.name }}<div style="max-width:220px">{% progress_bar u.completion_rate %}</div></div><small class="text-muted">{{ u.done }}/{{ u.total }}</small></div>
+    {% empty %}{% include "partials/empty.html" %}{% endfor %}
+  </div></div></div>
+  <div class="col-lg-4"><div class="card h-100"><div class="card-header"><i class="bi bi-alarm"></i> أكثر الوحدات تأخرًا</div><div class="card-body py-1 list-compact">
+    {% for u in late_units %}<div class="item"><span class="badge bg-danger rounded-pill">{{ forloop.counter }}</span><div class="flex-grow-1">{{ u.name }}<div class="small text-muted">نسبة التأخير {{ u.delay_rate }}% من المفتوحة</div></div><span class="badge bg-danger-subtle text-danger">{{ u.overdue }} متأخرة</span></div>
+    {% empty %}{% include "partials/empty.html" with icon="bi-emoji-smile" title="لا توجد وحدات متأخرة" %}{% endfor %}
+  </div></div></div>
+  <div class="col-lg-4"><div class="card h-100"><div class="card-header"><i class="bi bi-speedometer2"></i> ضغط العمل حسب الوحدات</div><div class="card-body"><div class="chart-box"><canvas id="loadChart"></canvas></div></div></div></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-6">{% include "dashboard/_mini.html" with tasks=needs_ed title="تتطلب قرار المدير التنفيذي" icon="bi-person-workspace" empty="لا توجد مهام تتطلب قرارًا" %}</div>
+  <div class="col-lg-6">{% include "dashboard/_mini.html" with tasks=critical title="المهام الحرجة" icon="bi-lightning-charge" empty="لا توجد مهام حرجة" link="/followup/?tab=critical" %}</div>
+  <div class="col-lg-4">{% include "dashboard/_mini.html" with tasks=stalled title="المهام المتعثرة" icon="bi-exclamation-octagon" empty="لا توجد مهام متعثرة" link="/followup/?tab=stalled" %}</div>
+  <div class="col-lg-4">{% include "dashboard/_mini.html" with tasks=overdue_long title="متأخرة أكثر من 7 أيام" icon="bi-hourglass-bottom" empty="لا توجد" %}</div>
+  <div class="col-lg-4">{% include "dashboard/_mini.html" with tasks=stale title="بدون تحديث" icon="bi-clock-history" empty="جميع المهام محدثة" link="/followup/?tab=stale" %}</div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-7"><div class="card h-100"><div class="card-header"><i class="bi bi-table"></i> مؤشرات الوحدات</div>
+    <div class="table-responsive"><table class="table table-hover table-sm">
+      <thead><tr><th>الوحدة</th><th>الإجمالي</th><th>المفتوحة</th><th>المكتملة</th><th>المتأخرة</th><th>المتعثرة</th><th>الإنجاز</th><th>الالتزام</th></tr></thead>
+      <tbody>{% for u in units %}<tr><td>{{ u.name }}</td><td>{{ u.total }}</td><td>{{ u.open }}</td><td class="text-success">{{ u.done }}</td><td class="{% if u.overdue %}text-danger fw-bold{% endif %}">{{ u.overdue }}</td><td class="{% if u.stalled %}text-stalled fw-bold{% endif %}">{{ u.stalled }}</td><td style="min-width:110px">{% progress_bar u.completion_rate %}</td><td>{{ u.on_time_rate }}%</td></tr>{% endfor %}</tbody>
+    </table></div></div></div>
+  <div class="col-xl-5"><div class="card h-100"><div class="card-header"><i class="bi bi-journal-x"></i> القرارات غير المنفذة<a href="{% url 'meetings:tracking' %}" class="small me-auto fw-normal">متابعة التنفيذ</a></div><div class="card-body py-1 list-compact">
+    {% for d in decisions %}<div class="item"><i class="bi bi-journal-text text-brand fs-5"></i><div class="flex-grow-1 small"><a href="{{ d.get_absolute_url }}" class="fw-bold">قرار {{ d.number }}</a> – {{ d.text|truncatechars:70 }}<div class="mt-1" style="max-width:220px">{% progress_bar d.implementation_pct %}</div></div><span class="badge badge-soft">{{ d.get_status_display }}</span></div>
+    {% empty %}{% include "partials/empty.html" with icon="bi-journal-check" title="جميع القرارات منفذة" %}{% endfor %}
+  </div></div></div>
+</div>
+{% endblock %}
+{% block scripts %}<script>renderChart("perfChart", {{ perf_chart|safe }}); renderChart("statusChart", {{ status_chart|safe }}); renderChart("loadChart", {{ load_chart|safe }});</script>{% endblock %}

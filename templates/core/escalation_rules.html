@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}قواعد التصعيد{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">الإعدادات</li><li class="breadcrumb-item active">قواعد التصعيد</li>{% endblock %}
+{% block page_title %}<i class="bi bi-graph-up-arrow text-brand"></i> قواعد التصعيد{% endblock %}
+{% block page_sub %}كل قاعدة تُطبق مرة واحدة لكل مهمة وموعد استحقاق. القواعد الخاصة بأولوية معينة (مثل الحرجة) تحل محل القواعد العامة لتلك الأولوية.{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-xl-7"><div class="card"><div class="table-responsive"><table class="table">
+    <thead><tr><th>القاعدة</th><th>المشغّل</th><th>الأيام</th><th>الإجراء</th><th>المستوى</th><th>المستهدفون</th><th>الأولويات</th><th></th></tr></thead>
+    <tbody>{% for r in rules %}<tr class="{% if not r.is_active %}opacity-50{% endif %}">
+      <td class="fw-semibold small">{{ r.name }}</td><td class="small">{{ r.get_trigger_display }}</td><td>{{ r.days }}</td>
+      <td>{% if r.action == 'escalate' %}<span class="badge bg-danger-subtle text-danger">تصعيد</span>{% else %}<span class="badge bg-warning-subtle text-warning-emphasis">تنبيه</span>{% endif %}</td>
+      <td>{{ r.level }}</td><td class="small">{{ r.targets_display }}</td><td class="small">{{ r.priorities_display }}</td>
+      <td class="text-nowrap"><a href="{% url 'core:escalation_rule_edit' r.pk %}" class="btn btn-soft btn-sm"><i class="bi bi-pencil"></i></a>
+        <form method="post" action="{% url 'core:escalation_rule_toggle' r.pk %}" class="d-inline">{% csrf_token %}<button class="btn btn-soft btn-sm" title="{% if r.is_active %}تعطيل{% else %}تفعيل{% endif %}"><i class="bi {% if r.is_active %}bi-toggle-on text-success{% else %}bi-toggle-off{% endif %}"></i></button></form></td>
+    </tr>{% endfor %}</tbody>
+  </table></div></div></div>
+  <div class="col-xl-5"><div class="card"><div class="card-header"><i class="bi bi-sliders"></i> {% if instance %}تعديل: {{ instance.name }}{% else %}قاعدة جديدة{% endif %}</div><div class="card-body">
+    <form method="post" class="row g-3">{% csrf_token %}
+      {% include "partials/form_field.html" with field=form.name %}
+      {% include "partials/form_field.html" with field=form.trigger col="col-md-6" %}
+      {% include "partials/form_field.html" with field=form.days col="col-md-6" %}
+      {% include "partials/form_field.html" with field=form.action col="col-md-6" %}
+      {% include "partials/form_field.html" with field=form.level col="col-md-6" %}
+      <div class="col-md-6"><label class="form-label">{{ form.targets.label }}</label>{% for cb in form.targets %}<div class="form-check">{{ cb.tag }}<label class="form-check-label" for="{{ cb.id_for_label }}">{{ cb.choice_label }}</label></div>{% endfor %}{{ form.targets.errors }}</div>
+      <div class="col-md-6"><label class="form-label">{{ form.priorities.label }}</label>{% for cb in form.priorities %}<div class="form-check">{{ cb.tag }}<label class="form-check-label" for="{{ cb.id_for_label }}">{{ cb.choice_label }}</label></div>{% endfor %}</div>
+      {% include "partials/form_field.html" with field=form.sort_order col="col-md-6" %}
+      {% include "partials/form_field.html" with field=form.is_active col="col-md-6" %}
+      <div class="col-12 d-flex gap-2"><button class="btn btn-brand">حفظ</button>{% if instance %}<a href="{% url 'core:escalation_rules' %}" class="btn btn-soft">قاعدة جديدة</a>{% endif %}</div>
+    </form>
+  </div></div></div>
+</div>
+{% endblock %}

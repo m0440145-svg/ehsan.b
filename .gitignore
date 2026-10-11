@@ -218,3 +218,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ===== منصة إدارة المهام =====
+.venv/
+.env
+db.sqlite3
+private_media/
+staticfiles/
+backups/
+logs/
+.claude/

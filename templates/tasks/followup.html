@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}مركز المتابعة{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item active">مركز المتابعة</li>{% endblock %}
+{% block page_title %}<i class="bi bi-binoculars text-brand"></i> مركز المتابعة{% endblock %}
+{% block page_sub %}رصد المهام المتأخرة والمتعثرة والقريبة من الاستحقاق واتخاذ الإجراء مباشرة{% endblock %}
+{% block page_actions %}<button class="btn btn-soft" onclick="window.print()"><i class="bi bi-printer"></i> طباعة</button>{% endblock %}
+{% block content %}
+<ul class="nav nav-tabs-soft mb-3">
+  {% for t in tabs %}
+  <li class="nav-item"><a class="nav-link {% if t.key == tab %}active{% endif %}" href="?tab={{ t.key }}"><i class="bi {{ t.icon }}"></i> {{ t.label }} <span class="count">{{ t.count }}</span></a></li>
+  {% endfor %}
+</ul>
+<div class="card">
+  <div class="card-header"><i class="bi {{ current.icon }}"></i> {{ current.label }} <span class="badge badge-soft me-2">{{ current.count }}</span></div>
+  {% include "tasks/_table.html" with tasks=page_obj show_reason=True empty_icon="bi-emoji-smile" empty_title="لا توجد مهام في هذا التبويب" empty_text="ممتاز! لا يوجد ما يستدعي المتابعة هنا." %}
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

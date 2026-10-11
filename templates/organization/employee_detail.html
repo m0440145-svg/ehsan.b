@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ emp.full_name }}{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'organization:employees' %}">الموظفون</a></li><li class="breadcrumb-item active">{{ emp.full_name }}</li>{% endblock %}
+{% block page_title %}{{ emp.full_name }}{% endblock %}
+{% block page_sub %}{{ emp.job_title }} · رقم الموظف {{ emp.employee_no }}{% endblock %}
+{% block page_actions %}{% if user|can:"admin.employees" %}<a href="{% url 'organization:employee_edit' emp.pk %}" class="btn btn-brand"><i class="bi bi-pencil"></i> تعديل</a>{% endif %}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <div class="col-lg-4"><div class="card h-100"><div class="card-body text-center">
+    <span class="avatar lg mb-2">{{ emp.full_name|initials }}</span>
+    <h5 class="mb-0">{{ emp.full_name }}</h5><div class="text-muted small mb-3">{{ emp.job_title }}</div>
+    <div class="text-start small">
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">الوحدات</span><span>{% for l in units %}{{ l.unit.name }}{% if l.is_primary %} ★{% endif %}{% if not forloop.last %}، {% endif %}{% endfor %}</span></div>
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">المدير المباشر</span><span>{{ emp.manager.full_name|default:"—" }}</span></div>
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">البريد</span><span class="ltr">{{ emp.email|default:"—" }}</span></div>
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">الجوال</span><span class="ltr">{{ emp.phone|default:"—" }}</span></div>
+      <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">الدور</span><span>{{ emp.user.role.name|default:"—" }}</span></div>
+      <div class="d-flex justify-content-between py-2"><span class="text-muted">تاريخ الانضمام</span><span>{{ emp.join_date|date:"Y-m-d"|default:"—" }}</span></div>
+    </div>
+  </div></div></div>
+  <div class="col-lg-8"><div class="card h-100"><div class="card-header"><i class="bi bi-bar-chart"></i> مؤشرات الموظف</div><div class="card-body">
+    <div class="row g-2 mb-3 text-center small">
+      <div class="col"><div class="fw-bold fs-4">{{ kpis.total }}</div>إجمالي</div>
+      <div class="col"><div class="fw-bold fs-4 text-success">{{ kpis.done }}</div>مكتمل</div>
+      <div class="col"><div class="fw-bold fs-4 text-danger">{{ kpis.overdue }}</div>متأخر</div>
+      <div class="col"><div class="fw-bold fs-4 text-stalled">{{ kpis.stalled }}</div>متعثر</div>
+      <div class="col"><div class="fw-bold fs-4">{{ kpis.on_time_rate }}%</div>الالتزام</div>
+    </div>
+    <div class="chart-box sm"><canvas id="empChart"></canvas></div>
+  </div></div></div>
+</div>
+<div class="card"><div class="card-header"><i class="bi bi-list-task"></i> المهام الحالية</div>{% include "tasks/_table.html" with tasks=tasks %}</div>
+{% endblock %}
+{% block scripts %}<script>renderChart("empChart", {{ chart|safe }});</script>{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}ملفي الشخصي{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item active">ملفي الشخصي</li>{% endblock %}
+{% block page_title %}ملفي الشخصي{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card"><div class="card-body text-center">
+      <span class="avatar lg mb-2">{{ user.full_name|initials }}</span>
+      <h5 class="mb-0">{{ user.full_name }}</h5>
+      <div class="text-muted small mb-3">{{ user.role.name }}</div>
+      <div class="text-start small">
+        <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">البريد</span><span class="ltr">{{ user.email }}</span></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">الجوال</span><span class="ltr">{{ user.phone|default:"—" }}</span></div>
+        {% if current_employee %}
+        <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">رقم الموظف</span><span>{{ current_employee.employee_no }}</span></div>
+        <div class="d-flex justify-content-between py-2 border-bottom"><span class="text-muted">المسمى</span><span>{{ current_employee.job_title }}</span></div>
+        <div class="d-flex justify-content-between py-2"><span class="text-muted">الوحدة</span><span>{{ current_employee.primary_unit|default:"—" }}</span></div>
+        {% endif %}
+      </div>
+    </div></div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card mb-3"><div class="card-header"><i class="bi bi-key"></i> تغيير كلمة المرور</div><div class="card-body">
+      <form method="post" class="row g-3">{% csrf_token %}
+        {% for f in form %}{% include "partials/form_field.html" with field=f col="col-md-4" %}{% endfor %}
+        <div class="col-12"><button class="btn btn-brand">حفظ</button></div>
+      </form>
+    </div></div>
+    <div class="card"><div class="card-header"><i class="bi bi-shield-check"></i> آخر محاولات الدخول</div>
+      <div class="table-responsive"><table class="table table-sm">
+        <thead><tr><th>التاريخ</th><th>العنوان</th><th>النتيجة</th></tr></thead>
+        <tbody>{% for a in attempts %}<tr><td>{{ a.created_at|date:"Y-m-d H:i" }}</td><td class="ltr">{{ a.ip_address }}</td><td>{% if a.success %}<span class="text-success">ناجحة</span>{% else %}<span class="text-danger">فاشلة</span>{% endif %}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

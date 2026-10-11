@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}تحويل القرار إلى مهام{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'meetings:decisions' %}">القرارات</a></li><li class="breadcrumb-item"><a href="{{ d.get_absolute_url }}">{{ d.number }}</a></li><li class="breadcrumb-item active">تحويل إلى مهمة</li>{% endblock %}
+{% block page_title %}<i class="bi bi-arrow-left-right text-brand"></i> تحويل القرار {{ d.number }} إلى مهام{% endblock %}
+{% block page_sub %}بيانات القرار تُنقل تلقائيًا؛ حدد فقط: الوحدة، المسؤول، المشاركين، تاريخ الاستحقاق، الأولوية{% endblock %}
+{% block content %}
+<div class="card mb-3 bg-brand-subtle"><div class="card-body">
+  <div class="row g-3 small">
+    <div class="col-md-2"><div class="text-muted">رقم القرار</div><div class="fw-bold">{{ d.number }}</div></div>
+    <div class="col-md-3"><div class="text-muted">الاجتماع</div><div class="fw-bold">{{ d.meeting.number }} – {{ d.meeting.title }}</div></div>
+    <div class="col-md-2"><div class="text-muted">اللجنة</div><div class="fw-bold">{{ d.meeting.committee }}</div></div>
+    <div class="col-md-2"><div class="text-muted">تاريخ القرار</div><div class="fw-bold">{{ d.decision_date|date:"Y-m-d" }}</div></div>
+    <div class="col-md-3"><div class="text-muted">المرفقات</div><div class="fw-bold">{{ d.attachments.count }} ملف (تُنسخ للمهام)</div></div>
+    <div class="col-12"><div class="text-muted">نص القرار</div><div>{{ d.text }}</div></div>
+  </div>
+</div></div>
+
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="rows" id="id_rows" value="0">
+  <div id="convertRows"></div>
+  <div class="d-flex gap-2 flex-wrap">
+    <button type="button" class="btn btn-soft" id="addConvertRow"><i class="bi bi-plus-lg"></i> إضافة مهمة أخرى</button>
+    <button class="btn btn-brand me-auto" data-confirm="إنشاء المهام المحددة وربطها بالقرار وإرسال التنبيهات للمسؤولين؟"><i class="bi bi-check2-circle"></i> إنشاء المهام</button>
+  </div>
+</form>
+
+<template id="convertRowTpl">
+  <div class="card mb-3"><div class="card-body">
+    <div class="d-flex justify-content-between mb-2"><strong class="fw-head">المهمة <span class="row-no">__n__</span></strong><button type="button" class="btn btn-sm btn-soft text-danger" data-remove-row><i class="bi bi-trash"></i></button></div>
+    <div class="row g-2">
+      <div class="col-md-12"><label class="form-label small">عنوان المهمة</label><input name="title___i__" class="form-control" placeholder="مثال: إعداد المحتوى التدريبي (اتركه فارغًا لاستخدام: تنفيذ القرار {{ d.number }})"></div>
+      <div class="col-md-3"><label class="form-label small">الوحدة <span class="required-star">*</span></label>
+        <select name="unit___i__" class="form-select" data-enhance-row required><option value="">اختر...</option>{% for u in units %}<option value="{{ u.pk }}">{{ u.name }}</option>{% endfor %}</select></div>
+      <div class="col-md-3"><label class="form-label small">المسؤول الرئيسي</label>
+        <select name="owner___i__" class="form-select" data-enhance-row data-placeholder="رئيس الوحدة افتراضيًا"><option value="">رئيس الوحدة افتراضيًا</option>{% for e in employees %}<option value="{{ e.pk }}">{{ e.full_name }}</option>{% endfor %}</select></div>
+      <div class="col-md-3"><label class="form-label small">المشاركون</label>
+        <select name="participants___i__" class="form-select" multiple data-enhance-row data-placeholder="اختياري">{% for e in employees %}<option value="{{ e.pk }}">{{ e.full_name }}</option>{% endfor %}</select></div>
+      <div class="col-md-2"><label class="form-label small">تاريخ الاستحقاق <span class="required-star">*</span></label><input type="date" name="due_date___i__" class="form-control" value="{{ default_due|date:'Y-m-d' }}" required></div>
+      <div class="col-md-1"><label class="form-label small">الأولوية</label>
+        <select name="priority___i__" class="form-select">{% for v, l in priorities %}<option value="{{ v }}" {% if v == "normal" %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    </div>
+  </div></div>
+</template>
+{% endblock %}

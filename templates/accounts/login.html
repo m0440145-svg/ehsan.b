@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}تسجيل الدخول{% endblock %}
+{% block body %}
+<div class="login-page">
+  <section class="login-side">
+    <div>
+      <div class="d-flex align-items-center gap-3 mb-5">
+        <div class="brand-logo" style="background:rgba(255,255,255,.2)"><i class="bi bi-diagram-3-fill"></i></div>
+        <div>
+          <div class="fw-bold" style="font-family:Cairo">جمعية الإحسان للخدمات الاجتماعية</div>
+          <div class="small opacity-75">ببريدة</div>
+        </div>
+      </div>
+      <h1>منصة إدارة المهام<br>ومتابعة القرارات</h1>
+      <p class="opacity-75 mb-4">متابعة تنفيذ الأعمال والتكليفات وقرارات الاجتماعات من الإسناد حتى الاعتماد والإغلاق.</p>
+      <div class="feature"><i class="bi bi-diagram-3"></i> إسناد المهام للوحدات والموظفين</div>
+      <div class="feature"><i class="bi bi-binoculars"></i> مركز متابعة للمتأخر والمتعثر</div>
+      <div class="feature"><i class="bi bi-journal-check"></i> ربط قرارات الاجتماعات بالتنفيذ</div>
+      <div class="feature"><i class="bi bi-bar-chart-line"></i> لوحات قيادة وتقارير ومؤشرات أداء</div>
+    </div>
+    <div class="chain">اجتماع ← قرار ← مهمة ← وحدة ← مسؤول ← متابعة ← تعثر ← معالجة ← تصعيد ← إنجاز ← اعتماد ← إغلاق ← تقرير ← مؤشر أداء</div>
+  </section>
+  <section class="login-form-wrap">
+    <div class="card login-card">
+      <div class="card-body">
+        <div class="text-center mb-4">
+          <div class="brand-logo mx-auto mb-3" style="width:56px;height:56px;font-size:1.6rem"><i class="bi bi-shield-lock"></i></div>
+          <h4 class="fw-bold mb-1">تسجيل الدخول</h4>
+          <p class="text-muted small mb-0">ادخل بالبريد الإلكتروني أو رقم الجوال</p>
+        </div>
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger small d-flex gap-2 align-items-center"><i class="bi bi-exclamation-triangle"></i><div>{{ form.non_field_errors|join:" " }}</div></div>
+        {% endif %}
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+          <div class="mb-3">
+            <label class="form-label" for="id_identifier">{{ form.identifier.label }}</label>
+            <div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-person"></i></span>{{ form.identifier }}</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label" for="id_password">{{ form.password.label }}</label>
+            <div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-key"></i></span>{{ form.password }}</div>
+          </div>
+          <button type="submit" class="btn btn-brand w-100 py-2"><i class="bi bi-box-arrow-in-left ms-1"></i> دخول</button>
+        </form>
+        <div class="text-center mt-4 small text-muted">
+          <i class="bi bi-lock-fill text-success"></i> اتصال آمن – تُسجَّل جميع محاولات الدخول
+          {% if otp_enabled %}<br><i class="bi bi-phone"></i> التحقق الثنائي مفعل{% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
