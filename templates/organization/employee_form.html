@@ -1,21 +1,39 @@
 {% extends "base.html" %}
 {% block title %}{% if instance %}تعديل موظف{% else %}موظف جديد{% endif %}{% endblock %}
 {% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'organization:employees' %}">الموظفون</a></li><li class="breadcrumb-item active">{% if instance %}{{ instance.full_name }}{% else %}جديد{% endif %}</li>{% endblock %}
-{% block page_title %}{% if instance %}تعديل: {{ instance.full_name }}{% else %}موظف جديد{% endif %}{% endblock %}
-{% block page_sub %}البريد والجوال والدور تُدار من حساب المستخدم المرتبط (الإدارة ← المستخدمون){% endblock %}
+{% block page_title %}{% if instance %}تعديل: {{ instance.full_name }}{% else %}إضافة موظف{% endif %}{% endblock %}
+{% block page_sub %}بيانات الموظف وحساب دخوله في شاشة واحدة{% endblock %}
+{% block page_actions %}{% if not instance %}<a href="{% url 'organization:employee_import' %}" class="btn btn-soft"><i class="bi bi-file-earmark-excel"></i> استيراد عدة موظفين من Excel</a>{% endif %}{% endblock %}
 {% block content %}
-<div class="card"><div class="card-body">
-  <form method="post" enctype="multipart/form-data" class="row g-3">{% csrf_token %}
-    {% include "partials/form_field.html" with field=form.full_name col="col-md-6" %}
-    {% include "partials/form_field.html" with field=form.employee_no col="col-md-3" %}
-    {% include "partials/form_field.html" with field=form.status col="col-md-3" %}
+<form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+<div class="row g-3">
+  <div class="col-lg-7"><div class="card h-100"><div class="card-header"><i class="bi bi-person-vcard"></i> بيانات الموظف</div><div class="card-body row g-3">
+    {% include "partials/form_field.html" with field=form.full_name col="col-md-8" %}
+    {% include "partials/form_field.html" with field=form.employee_no col="col-md-4" %}
     {% include "partials/form_field.html" with field=form.job_title col="col-md-6" %}
-    {% include "partials/form_field.html" with field=form.manager col="col-md-6" %}
-    {% include "partials/form_field.html" with field=form.units col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.status col="col-md-6" %}
     {% include "partials/form_field.html" with field=form.primary_unit col="col-md-6" %}
-    {% include "partials/form_field.html" with field=form.join_date col="col-md-4" %}
-    {% include "partials/form_field.html" with field=form.photo col="col-md-8" %}
-    <div class="col-12 d-flex gap-2"><button class="btn btn-brand"><i class="bi bi-check2"></i> حفظ</button><a href="{% url 'organization:employees' %}" class="btn btn-soft">إلغاء</a></div>
-  </form>
-</div></div>
+    {% include "partials/form_field.html" with field=form.units col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.is_unit_head col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.manager col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.join_date col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.photo col="col-md-6" %}
+  </div></div></div>
+  <div class="col-lg-5"><div class="card h-100"><div class="card-header"><i class="bi bi-key"></i> حساب الدخول</div><div class="card-body row g-3">
+    {% include "partials/form_field.html" with field=form.has_account col="col-12" %}
+    {% include "partials/form_field.html" with field=form.email col="col-12" %}
+    {% include "partials/form_field.html" with field=form.phone col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.role col="col-md-6" %}
+    {% include "partials/form_field.html" with field=form.password col="col-12" %}
+    {% include "partials/form_field.html" with field=form.account_active col="col-12" %}
+    <div class="col-12 small text-muted"><i class="bi bi-info-circle"></i> يدخل الموظف بالبريد أو الجوال. لإضافة <strong>مسؤول نظام</strong> اختر الدور «مسؤول النظام».</div>
+  </div></div></div>
+  <div class="col-12 d-flex gap-2 flex-wrap">
+    <button class="btn btn-brand"><i class="bi bi-check2"></i> حفظ</button>
+    {% if not instance %}<button class="btn btn-outline-brand" name="save_and_new" value="1"><i class="bi bi-plus-lg"></i> حفظ وإضافة آخر</button>{% endif %}
+    <a href="{% url 'organization:employees' %}" class="btn btn-soft">إلغاء</a>
+  </div>
+</div>
+</form>
 {% endblock %}

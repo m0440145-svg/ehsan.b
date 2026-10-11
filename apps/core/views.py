@@ -129,6 +129,60 @@ def notification_settings(request):
     })
 
 
+@perm_required("settings.manage")
+def organization_settings(request):
+    from django.core.exceptions import ValidationError
+
+    from .branding import get_org, save_org
+    from .settings_service import ORG_LABELS
+
+    org = get_org()
+    errors = {}
+    if request.method == "POST":
+        try:
+            save_org(request.POST, user=request.user, logo=request.FILES.get("logo"),
+                     remove_logo=request.POST.get("remove_logo") == "on")
+            messages.success(request, "تم حفظ بيانات الجهة")
+            return redirect("core:organization")
+        except ValidationError as e:
+            errors = e.message_dict if hasattr(e, "error_dict") else {"__all__": e.messages}
+            org.update({k: request.POST.get(k, "") for k in ORG_LABELS})
+    fields = [{"key": k, "label": label, "value": org.get(k, "")} for k, label in ORG_LABELS.items()]
+    return render(request, "core/organization.html", {"fields": fields, "org": org, "errors": errors})
+
+
+@perm_required("settings.manage")
+def getting_started(request):
+    from django.urls import reverse
+
+    from apps.accounts.models import User
+    from apps.meetings.models import MeetingDecision
+    from apps.organization.models import Employee, Unit
+    from apps.tasks.models import Task
+
+    from .branding import get_org
+
+    org = get_org()
+    units = Unit.objects.filter(is_active=True)
+    steps = [
+        ("بيانات الجهة والشعار", "الاسم والشعار وبيانات التواصل تظهر في كل الصفحات والتقارير",
+         bool(org.get("logo")), reverse("core:organization"), "bi-building"),
+        ("الوحدات التنظيمية", f"{units.count()} وحدة – راجع الأسماء وأضف أو أوقف ما يلزم",
+         units.exists(), reverse("organization:units"), "bi-diagram-3"),
+        ("الموظفون وحساباتهم", f"{Employee.objects.count()} موظف – أضف يدويًا أو استورد من Excel",
+         Employee.objects.count() > 1, reverse("organization:employee_import"), "bi-people"),
+        ("رؤساء الوحدات", f"{units.filter(head__isnull=False).count()} من {units.count()} وحدة لها رئيس",
+         units.exists() and not units.filter(head__isnull=True).exists(), reverse("organization:units"), "bi-person-badge"),
+        ("مسؤولو النظام الإضافيون والمدير التنفيذي", f"{User.objects.filter(role__code__in=['admin', 'executive_director', 'ed_assistant']).count()} حساب إداري",
+         User.objects.filter(role__code="executive_director").exists(), reverse("accounts:user_create"), "bi-shield-lock"),
+        ("قواعد المتابعة والتصعيد", "راجع الحدود الزمنية وقواعد التصعيد بما يناسب الجمعية",
+         None, reverse("core:escalation_rules"), "bi-sliders"),
+        ("أول قرار أو مهمة", "سجّل قرار اجتماع وحوّله لمهام، أو أنشئ مهمة مباشرة",
+         Task.objects.exists() or MeetingDecision.objects.exists(), reverse("tasks:create"), "bi-rocket-takeoff"),
+    ]
+    return render(request, "core/getting_started.html", {"steps": steps})
+
+
 @perm_required("admin.audit")
 def audit_log(request):
     qs = AuditLog.objects.select_related("user", "task")

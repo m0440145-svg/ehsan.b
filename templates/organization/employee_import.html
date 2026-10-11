@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}استيراد الموظفين{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item"><a href="{% url 'organization:employees' %}">الموظفون</a></li><li class="breadcrumb-item active">استيراد من Excel</li>{% endblock %}
+{% block page_title %}<i class="bi bi-file-earmark-excel text-success"></i> استيراد الموظفين من Excel{% endblock %}
+{% block page_sub %}أضف جميع موظفي الجمعية وحساباتهم دفعة واحدة{% endblock %}
+{% block content %}
+{% if created %}
+<div class="card mb-3 border-success">
+  <div class="card-header"><i class="bi bi-check2-circle text-success"></i> تم إنشاء {{ created|length }} موظف
+    <button class="btn btn-soft btn-sm me-auto no-print" onclick="window.print()"><i class="bi bi-printer"></i> طباعة بيانات الدخول</button></div>
+  <div class="alert alert-warning m-3 small mb-0"><i class="bi bi-shield-exclamation"></i> كلمات المرور المؤقتة تظهر <strong>هذه المرة فقط</strong>. سلّمها للموظفين بطريقة آمنة؛ وسيُطلب من كل موظف تغييرها عند أول دخول.</div>
+  <div class="table-responsive"><table class="table table-sm">
+    <thead><tr><th>الاسم</th><th>رقم الموظف</th><th>الوحدة</th><th>البريد (اسم الدخول)</th><th>الدور</th><th>كلمة المرور المؤقتة</th></tr></thead>
+    <tbody>{% for c in created %}<tr><td>{{ c.name }}</td><td>{{ c.no }}</td><td class="small">{{ c.unit }}</td><td class="ltr small">{{ c.email|default:"بلا حساب" }}</td><td class="small">{{ c.role }}</td><td class="ltr"><code>{{ c.password|default:"—" }}</code></td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endif %}
+{% if errors %}
+<div class="card mb-3 border-danger"><div class="card-header"><i class="bi bi-x-octagon text-danger"></i> أخطاء في الملف (لم يُستورد شيء)</div>
+  <div class="table-responsive"><table class="table table-sm">
+    <thead><tr><th>الصف</th><th>الاسم</th><th>الأخطاء</th></tr></thead>
+    <tbody>{% for row, name, errs in errors %}<tr><td>{{ row }}</td><td>{{ name }}</td><td class="text-danger small">{{ errs|join:" · " }}</td></tr>{% endfor %}</tbody>
+  </table></div></div>
+{% endif %}
+<div class="row g-3 no-print">
+  <div class="col-lg-5"><div class="card h-100"><div class="card-header"><i class="bi bi-1-circle"></i> نزّل القالب</div><div class="card-body small">
+    <p>القالب يحتوي الأعمدة المطلوبة وقائمة بالوحدات المتاحة في ورقة منفصلة.</p>
+    <ul class="pe-3">
+      <li>الأعمدة الإلزامية: الاسم، رقم الموظف، الوحدة.</li>
+      <li>إذا كتبت <strong>البريد</strong> يُنشأ حساب دخول تلقائيًا.</li>
+      <li>الدور: موظف (افتراضي)، رئيس الوحدة، المدير التنفيذي، مساعد المدير التنفيذي، مسؤول النظام، مستخدم للعرض فقط.</li>
+      <li>إذا تركت كلمة المرور فارغة تُولَّد كلمة مؤقتة قوية.</li>
+      <li>«رئيس الوحدة؟ = نعم» يعيّن الموظف رئيسًا لوحدته.</li>
+    </ul>
+    <a href="{% url 'organization:employee_import_template' %}" class="btn btn-success"><i class="bi bi-download"></i> تنزيل قالب Excel</a>
+  </div></div></div>
+  <div class="col-lg-7"><div class="card h-100"><div class="card-header"><i class="bi bi-2-circle"></i> ارفع الملف بعد تعبئته</div><div class="card-body">
+    <form method="post" enctype="multipart/form-data" class="row g-3">{% csrf_token %}
+      {% include "partials/form_field.html" with field=form.file %}
+      {% include "partials/form_field.html" with field=form.create_missing_units %}
+      <div class="col-12"><button class="btn btn-brand"><i class="bi bi-cloud-upload"></i> استيراد</button></div>
+      <div class="col-12 small text-muted"><i class="bi bi-info-circle"></i> يُفحص الملف كاملًا أولًا؛ وإن وُجد خطأ في أي صف لا يُستورد شيء حتى تصحيحه.</div>
+    </form>
+  </div></div></div>
+</div>
+{% endblock %}

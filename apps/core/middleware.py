@@ -37,6 +37,26 @@ class RequestContextMiddleware:
             _local.request = None
 
 
+class ForcePasswordChangeMiddleware:
+    """يُلزم المستخدم بتغيير كلمة المرور المؤقتة (حسابات أنشأها المسؤول أو استوردها) قبل استخدام المنصة."""
+
+    ALLOWED_PREFIXES = ("/accounts/profile/", "/accounts/logout/", "/static/", "/branding/")
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = getattr(request, "user", None)
+        if (user is not None and user.is_authenticated and getattr(user, "must_change_password", False)
+                and not request.path.startswith(self.ALLOWED_PREFIXES) and not request.path.startswith("/api/")):
+            from django.contrib import messages
+            from django.shortcuts import redirect
+
+            messages.warning(request, "يرجى تغيير كلمة المرور المؤقتة قبل متابعة استخدام المنصة")
+            return redirect("accounts:profile")
+        return self.get_response(request)
+
+
 class RuleEngineMiddleware:
     """
     تشغيل محرك القواعد والتصعيد تلقائيًا كل N دقيقة (حسب الإعدادات) داخل التطبيق.

@@ -15,4 +15,6 @@ urlpatterns = [
     path("escalation/<int:pk>/toggle/", views.escalation_rule_toggle, name="escalation_rule_toggle"),
     path("notifications/", views.notification_settings, name="notification_settings"),
     path("audit/", views.audit_log, name="audit"),
+    path("organization/", views.organization_settings, name="organization"),
+    path("getting-started/", views.getting_started, name="getting_started"),
 ]

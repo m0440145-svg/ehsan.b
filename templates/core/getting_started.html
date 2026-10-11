@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}دليل البدء{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">الإعدادات</li><li class="breadcrumb-item active">دليل البدء</li>{% endblock %}
+{% block page_title %}<i class="bi bi-rocket-takeoff text-brand"></i> دليل البدء{% endblock %}
+{% block page_sub %}خطوات تجهيز المنصة لاستخدام الجمعية الفعلي{% endblock %}
+{% block content %}
+<div class="card"><div class="card-body py-1 list-compact">
+  {% for title, desc, done, url, icon in steps %}
+  <a href="{{ url }}" class="item text-ink">
+    <span class="notif-icon {% if done %}bg-success-subtle text-success{% else %}bg-brand-subtle text-brand{% endif %}"><i class="bi {% if done %}bi-check2-circle{% else %}{{ icon }}{% endif %}"></i></span>
+    <div class="flex-grow-1"><div class="fw-bold">{{ forloop.counter }}. {{ title }}</div><div class="small text-muted">{{ desc }}</div></div>
+    {% if done %}<span class="badge bg-success-subtle text-success">مكتمل</span>{% elif done is None %}<span class="badge badge-soft">مراجعة</span>{% else %}<span class="badge bg-brand">ابدأ</span>{% endif %}
+  </a>
+  {% endfor %}
+</div></div>
+{% endblock %}

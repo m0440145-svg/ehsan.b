@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}بيانات الجهة{% endblock %}
+{% block breadcrumbs %}<li class="breadcrumb-item">الإعدادات</li><li class="breadcrumb-item active">بيانات الجهة</li>{% endblock %}
+{% block page_title %}<i class="bi bi-building text-brand"></i> بيانات الجهة{% endblock %}
+{% block page_sub %}تظهر في القائمة الجانبية وصفحة الدخول ورؤوس التقارير المطبوعة{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+<div class="row g-3">
+  <div class="col-lg-8"><div class="card"><div class="card-body row g-3">
+    {% for f in fields %}
+    <div class="{% if f.key == 'name' or f.key == 'address' or f.key == 'platform_name' %}col-12{% else %}col-md-6{% endif %}">
+      <label class="form-label" for="o_{{ f.key }}">{{ f.label }}{% if f.key == "name" %} <span class="required-star">*</span>{% endif %}</label>
+      <input class="form-control" id="o_{{ f.key }}" name="{{ f.key }}" value="{{ f.value }}" {% if f.key == "email" or f.key == "website" or f.key == "phone" %}dir="ltr"{% endif %}>    </div>
+    {% endfor %}
+    {% if errors %}<div class="col-12 alert alert-danger mb-0">{% for k, v in errors.items %}{{ v|join:" " }} {% endfor %}</div>{% endif %}
+  </div></div></div>
+  <div class="col-lg-4"><div class="card"><div class="card-header"><i class="bi bi-image"></i> الشعار</div><div class="card-body text-center">
+    {% if org.logo %}<img src="{% url 'branding_logo' %}?v={{ org.logo|slice:'-14:' }}" alt="الشعار" class="mb-3" style="max-width:100%;max-height:140px;object-fit:contain">
+      <div class="form-check text-start mb-2"><input class="form-check-input" type="checkbox" name="remove_logo" id="rmlogo"><label class="form-check-label" for="rmlogo">حذف الشعار الحالي</label></div>
+    {% else %}<div class="empty-state py-3"><i class="bi bi-image"></i><small>لا يوجد شعار</small></div>{% endif %}
+    <input type="file" name="logo" class="form-control" accept=".png,.jpg,.jpeg,.webp">
+    <div class="form-text">PNG أو JPG، يفضل بخلفية شفافة</div>
+  </div></div></div>
+  <div class="col-12"><button class="btn btn-brand"><i class="bi bi-check2"></i> حفظ</button></div>
+</div>
+</form>
+{% endblock %}

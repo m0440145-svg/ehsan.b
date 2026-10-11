@@ -4,3 +4,5 @@ django-filter>=24.0
 dj-database-url>=2.1
 psycopg[binary]>=3.1
 openpyxl>=3.1
+whitenoise>=6.6
+waitress>=3.0

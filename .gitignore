@@ -227,4 +227,5 @@ private_media/
 staticfiles/
 backups/
 logs/
-.claude/
+.claude/db.demo.sqlite3
+private_media_demo/

@@ -2,10 +2,11 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.audit import services as audit
@@ -16,8 +17,9 @@ from apps.tasks.constants import ACTIVE_STATUSES, OPEN_STATUSES
 from apps.tasks.models import Task
 from apps.tasks.views import with_people
 
-from .forms import EmployeeForm, UnitForm
+from .forms import EmployeeForm, EmployeeImportForm, UnitForm
 from .models import Employee, EmployeeUnit, Unit
+from .services import import_employees, save_employee, template_workbook
 
 
 # ===== الوحدات =====
@@ -90,16 +92,41 @@ def employee_form(request, pk=None):
     instance = get_object_or_404(Employee, pk=pk) if pk else None
     form = EmployeeForm(request.POST or None, request.FILES or None, instance=instance)
     if request.method == "POST" and form.is_valid():
-        emp = form.save()
-        units = form.cleaned_data["units"]
-        primary = form.cleaned_data["primary_unit"]
-        EmployeeUnit.objects.filter(employee=emp).exclude(unit__in=units).delete()
-        for u in units:
-            EmployeeUnit.objects.update_or_create(employee=emp, unit=u, defaults={"is_primary": u == primary})
-        audit.log("employee.updated" if instance else "employee.created", obj=emp, description=emp.full_name)
-        messages.success(request, "تم حفظ بيانات الموظف")
+        emp = save_employee(form, request.user)
+        msg = "تم حفظ بيانات الموظف"
+        if not instance and emp.user_id:
+            msg += f" وإنشاء حساب دخول ({emp.user.email}) – سيُطلب منه تغيير كلمة المرور عند أول دخول"
+        messages.success(request, msg)
+        if request.POST.get("save_and_new"):
+            return redirect("organization:employee_create")
         return redirect("organization:employee_detail", pk=emp.pk)
     return render(request, "organization/employee_form.html", {"form": form, "instance": instance})
+
+
+@perm_required("admin.employees")
+def employee_import(request):
+    form = EmployeeImportForm(request.POST or None, request.FILES or None)
+    created, errors = [], []
+    if request.method == "POST" and form.is_valid():
+        try:
+            created, errors = import_employees(form.cleaned_data["file"], request.user,
+                                               form.cleaned_data["create_missing_units"])
+        except ValidationError as e:
+            messages.error(request, " ".join(e.messages))
+        else:
+            if errors:
+                messages.error(request, f"لم يُستورد أي موظف: يوجد {len(errors)} صف به أخطاء. صحّحها ثم أعد الرفع.")
+            else:
+                messages.success(request, f"تم استيراد {len(created)} موظف")
+    return render(request, "organization/employee_import.html", {"form": form, "created": created, "errors": errors})
+
+
+@perm_required("admin.employees")
+def employee_import_template(request):
+    resp = HttpResponse(template_workbook(),
+                        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    resp["Content-Disposition"] = 'attachment; filename="employees_template.xlsx"'
+    return resp
 
 
 @login_required

@@ -63,6 +63,8 @@ def _finish_login(request, user):
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("dashboard:home")
+    if not User.objects.exists():
+        return redirect("setup")  # أول تشغيل: معالج الإعداد
     form = _LoginForm(request.POST or None)
     status = 200
     if request.method == "POST":
@@ -162,7 +164,10 @@ def users_list(request):
 @transaction.atomic
 def user_form(request, pk=None):
     instance = get_object_or_404(User, pk=pk) if pk else None
-    form = _UserForm(request.POST or None, instance=instance)
+    initial = {}
+    if not instance:
+        initial = {"must_change_password": True, "role": Role.objects.filter(code=request.GET.get("role", "employee")).first()}
+    form = _UserForm(request.POST or None, instance=instance, initial=initial)
     if request.method == "POST" and form.is_valid():
         user = form.save(commit=False)
         if form.cleaned_data.get("password"):

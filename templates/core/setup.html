@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}إعداد المنصة{% endblock %}
+{% block body %}
+<div class="container py-4" style="max-width:920px">
+  <div class="text-center mb-4">
+    <div class="brand-logo mx-auto mb-3" style="width:60px;height:60px;font-size:1.7rem"><i class="bi bi-rocket-takeoff"></i></div>
+    <h3 class="fw-bold mb-1">إعداد المنصة لأول مرة</h3>
+    <p class="text-muted">أدخل بيانات الجهة وأنشئ حساب مسؤول النظام. تظهر هذه الصفحة مرة واحدة فقط.</p>
+  </div>
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+    <div class="card mb-3"><div class="card-header"><i class="bi bi-building"></i> 1. بيانات الجهة</div><div class="card-body row g-3">
+      {% include "partials/form_field.html" with field=form.org_name col="col-md-8" %}
+      {% include "partials/form_field.html" with field=form.org_short col="col-md-4" %}
+      {% include "partials/form_field.html" with field=form.city col="col-md-4" %}
+      {% include "partials/form_field.html" with field=form.org_phone col="col-md-4" %}
+      {% include "partials/form_field.html" with field=form.org_email col="col-md-4" %}
+      {% include "partials/form_field.html" with field=form.logo col="col-md-8" %}
+      {% include "partials/form_field.html" with field=form.create_units col="col-12" %}
+    </div></div>
+    <div class="card mb-3"><div class="card-header"><i class="bi bi-shield-lock"></i> 2. حساب مسؤول النظام</div><div class="card-body row g-3">
+      {% include "partials/form_field.html" with field=form.full_name col="col-md-6" %}
+      {% include "partials/form_field.html" with field=form.email col="col-md-6" %}
+      {% include "partials/form_field.html" with field=form.phone col="col-md-4" %}
+      {% include "partials/form_field.html" with field=form.password col="col-md-4" %}
+      {% include "partials/form_field.html" with field=form.password2 col="col-md-4" %}
+      <div class="col-12 form-text"><i class="bi bi-info-circle"></i> كلمة المرور 8 أحرف على الأقل، ولا تكون رقمية فقط أو شائعة.</div>
+      {% include "partials/form_field.html" with field=form.is_employee col="col-12" %}
+      {% include "partials/form_field.html" with field=form.employee_no col="col-md-6" %}
+      {% include "partials/form_field.html" with field=form.job_title col="col-md-6" %}
+    </div></div>
+    <button class="btn btn-brand w-100 py-2"><i class="bi bi-check2-circle"></i> إنشاء المنصة والدخول</button>
+  </form>
+</div>
+{% endblock %}

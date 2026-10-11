@@ -1,10 +1,14 @@
+from .branding import get_org
 from .menu import build_menu
 
 
 def platform(request):
+    org = get_org()
     ctx = {
-        "PLATFORM_NAME": "منصة إدارة المهام ومتابعة القرارات",
-        "ORG_NAME": "جمعية الإحسان للخدمات الاجتماعية ببريدة",
+        "ORG": org,
+        "PLATFORM_NAME": org.get("platform_name") or "منصة إدارة المهام ومتابعة القرارات",
+        "ORG_NAME": org.get("name"),
+        "ORG_SHORT": org.get("short_name") or org.get("name"),
     }
     user = getattr(request, "user", None)
     if user and user.is_authenticated:

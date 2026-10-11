@@ -32,6 +32,31 @@ DEFAULTS = {
         code: {"in_app": True, "email": False, "whatsapp": False} for code in EVENTS
     },
     "engine_state": {"last_run": None, "last_stats": {}},
+    "organization": {
+        "name": "جمعية الإحسان للخدمات الاجتماعية ببريدة",
+        "short_name": "جمعية الإحسان",
+        "platform_name": "منصة إدارة المهام ومتابعة القرارات",
+        "city": "بريدة",
+        "license_no": "",
+        "phone": "",
+        "email": "",
+        "website": "",
+        "address": "",
+        "logo": "",
+        "setup_completed": False,
+    },
+}
+
+ORG_LABELS = {
+    "name": "اسم الجهة الرسمي",
+    "short_name": "الاسم المختصر",
+    "platform_name": "اسم المنصة",
+    "city": "المدينة",
+    "license_no": "رقم الترخيص",
+    "phone": "الهاتف",
+    "email": "البريد الإلكتروني",
+    "website": "الموقع الإلكتروني",
+    "address": "العنوان",
 }
 
 RULE_LABELS = {

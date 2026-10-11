@@ -35,11 +35,14 @@ MENU = [
     {"label": "الإدارة", "icon": "bi-buildings", "key": "admin", "children": [
         {"label": "الوحدات", "url": "organization:units", "perm": "admin.units"},
         {"label": "الموظفون", "url": "organization:employees", "perm": "admin.employees"},
+        {"label": "استيراد الموظفين (Excel)", "url": "organization:employee_import", "perm": "admin.employees"},
         {"label": "المستخدمون", "url": "accounts:users", "perm": "admin.users"},
         {"label": "الصلاحيات", "url": "accounts:roles", "perm": "admin.roles"},
         {"label": "سجل التدقيق", "url": "core:audit", "perm": "admin.audit"},
     ]},
     {"label": "الإعدادات", "icon": "bi-gear", "key": "settings", "perm": "settings.manage", "children": [
+        {"label": "بيانات الجهة", "url": "core:organization"},
+        {"label": "دليل البدء", "url": "core:getting_started"},
         {"label": "حالات المهام", "url": "core:statuses"},
         {"label": "الأولويات", "url": "core:priorities"},
         {"label": "أنواع المهام", "url": "core:task_types"},

@@ -1,7 +1,12 @@
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.core.branding import logo_view
+from apps.core.setup_views import setup_view
+
 urlpatterns = [
+    path("setup/", setup_view, name="setup"),
+    path("branding/logo/", logo_view, name="branding_logo"),
     path("", include("apps.dashboard.urls")),
     path("accounts/", include("apps.accounts.urls")),
     path("tasks/", include("apps.tasks.urls")),
